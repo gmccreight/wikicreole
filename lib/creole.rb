@@ -44,6 +44,12 @@ class Creole
 
   @@blocks = %w{h1 h2 h3 hr nowiki h4 h5 h6 ul ol table p ip dl plug plug2 blank}
   
+  # handy - used several times in %chunks
+  @@eol = '(?:\n|$)'; # end of line (or string)
+  
+  #gemhack 4 is not actually used anywhere... should remove
+  @@bol = '(?:^|\n)'; # beginning of line (or string)
+  
   @is_initialized = false
 
   @@chunks_hash = {
@@ -51,8 +57,8 @@ class Creole
        :contains => @@blocks,
     },
     :blank => {
-      :curpat => "(?= *$eol)",
-      :fwpat => "(?=(?:^|\n) *$eol)",
+      :curpat => "(?= *#{@@eol})",
+      :fwpat => "(?=(?:^|\n) *#{@@eol})",
       :stops => '(?=\S)',
       :hint => ["\n"],
       :filter => Proc.new { "" }, # whitespace into the bit bucket
@@ -78,213 +84,255 @@ class Creole
         s
       },
       :open => "<div style=\"margin-left: 2em\">", :close => "</div>\n",
-    }
-#    :dl => {
-#      :curpat => '(?=;)',
-#      :fwpat => '\n(?=;)',
-#      :stops => ['blank', 'h', 'hr', 'nowiki', 'ul', 'ol', 'table'],
-#      :hint => [';'],
-#      :contains => ['dt', 'dd'],
-#      :open => "<dl>\n", :close => "</dl>\n",
-#    },
-#    :dt => {
-#      :curpat => '(?=;)',
-#      :fwpat => '\n(?=;)',
-#      :stops => '(?=:|\n)',
-#      :hint => [';'],
-#      :contains => @@all_inline,
-#      :filter => sub { $_[0] =~ s/^;\s*//o; return $_[0]; },
-#      :open => "  <dt>", :close => "</dt>\n",
-#    },
-#    :dd => {
-#      :curpat => '(?=\n|:)',
-#      :fwpat => '(?:\n|:)',
-#      :stops => '(?=:)|\n(?=;)',
-#      :hint => [':', "\n"],
-#      :contains => @@all_inline,
-#      :filter => sub { 
-#        $_[0] =~ s/(?:\n|:)\s*//so; 
-#        $_[0] =~ s/\s*$//so;
-#        return $_[0]; 
-#      },
-#      :open => "    <dd>", :close => "</dd>\n",
-#    },
-#    :table => {
-#      :curpat => '(?= *\|.)',
-#      :fwpat => '\n(?= *\|.)',
-#      :stops => '\n(?= *[^\|])',
-#      :contains => ['tr'],
-#      :hint => ['|', ' '],
-#      :open => "<table>\n", :close => "</table>\n\n",
-#    },
-#    :tr => {
-#      :curpat => '(?= *\|)',
-#      :stops => '\n',
-#      :contains => ['td', 'th'],
-#      :hint => ['|', ' '],
-#      :filter => sub { $_[0] =~ s/^ *//o; $_[0] =~ s/\| *$//o; return $_[0]; },
-#      :open => "    <tr>\n", :close => "    </tr>\n",
-#    },
-#    :td => {
-#      :curpat => '(?=\|[^=])',
-#      # this gnarly regex fixes ambiguous '|' for links/imgs/nowiki in tables
-#      :stops => '[^~](?=\|(?!(?:[^\[]*\]\])|(?:[^\{]*\}\})))',
-#      :contains => @@all_inline,
-#      :hint => ['|'],
-#      :filter => sub {$_[0] =~ s/^ *\| *//o; $_[0] =~ s/\s*$//so; return $_[0]; },
-#      :open => "        <td>", :close => "</td>\n",
-#    },
-#    :th => {
-#      :curpat => '(?=\|=)',
-#      # this gnarly regex fixes ambiguous '|' for links/imgs/nowiki in tables
-#      :stops => '[^~](?=\|(?!(?:[^\[]*\]\])|(?:[^\{]*\}\})))',
-#      :contains => @@all_inline,
-#      :hint => ['|'],
-#      :filter => sub {$_[0] =~ s/^ *\|= *//o; $_[0] =~ s/\s*$//so; return $_[0]; },
-#      :open => "        <th>", :close => "</th>\n",
-#    },
-#    :ul => {
-#      :curpat => '(?=(?:`| *)\*[^\*])',
-#      :fwpat => '(?=\n(?:`| *)\*[^\*])',
-#      :stops => ['blank', 'ip', 'h', 'nowiki', 'li', 'table', 'hr', 'dl'],
-#      :contains => ['ul', 'ol', 'li'],
-#      :hint => ['*', ' '],
-#      :filter => \&strip_list,
-#      :open => "<ul>\n", :close => "</ul>\n",
-#    },
-#    :ol => {
-#      :curpat => '(?=(?:`| *)\#[^\#])',
-#      :fwpat => '(?=\n(?:`| *)\#[^\#])',
-#      :stops => ['blank', 'ip', 'h', 'nowiki', 'li', 'table', 'hr', 'dl'],
-#      :contains => ['ul', 'ol', 'li'],
-#      :hint => ['#', ' '],
-#      :filter => \&strip_list,
-#      :open => "<ol>\n", :close => "</ol>\n",
-#    },
-#    :li => {
-#      :curpat => '(?=`[^\*\#])',
-#      :fwpat => '\n(?=`[^\*\#])',
-#      :stops => '\n(?=`)',
-#      :hint => ['`'],
-#      :filter => sub { 
-#        $_[0] =~ s/` *//o;
-#        chomp $_[0];
-#        return $_[0];
-#      },
-#      :contains => @@all_inline,
-#      :open => "    <li>", :close => "</li>\n",
-#    },
-#    :nowiki => {
-#      :curpat => '(?=\{\{\{ *\n)',
-#      :fwpat => '\n(?=\{\{\{ *\n)',
-#      :stops => "\n\}\}\} *$eol",
-#      :hint => ['{'],
-#      :filter => sub {
-#        substr($_[0], 0, 3, '');
-#        $_[0] =~ s/\}\}\}\s*$//o;
-#        $_[0] =~ s/&/&amp;/go;
-#        $_[0] =~ s/</&lt;/go;
-#        $_[0] =~ s/>/&gt;/go;
-#        return $_[0];
-#      },
-#      :open => "<pre>", :close => "</pre>\n\n",
-#    },
-#    :hr => {
-#      :curpat => "(?= *-{4,} *$eol)",
-#      :fwpat => "\n(?= *-{4,} *$eol)",
-#      :hint => ['-', ' '],
-#      :stops => $eol,
-#      :open => "<hr />\n\n", :close => "",
-#      :filter => sub { return ""; } # ----- into the bit bucket
-#    },
-#    :h => { :curpat => '(?=(?:^|\n) *=)' }, # matches any heading
-#    :h1 => {
-#      :curpat => '(?= *=[^=])',
-#      :hint => ['=', ' '], 
-#      :stops => '\n',
-#      :contains => @@all_inline,
-#      :open => "<h1>", :close => "</h1>\n\n",
-#      :filter => \&strip_head_eq,
-#    },
-#    :h2 => {
-#      :curpat => '(?= *={2}[^=])',
-#      :hint => ['=', ' '], 
-#      :stops => '\n',
-#      :contains => @@all_inline,
-#      :open => "<h2>", :close => "</h2>\n\n",
-#      :filter => \&strip_head_eq,
-#    },
-#    :h3 => {
-#      :curpat => '(?= *={3}[^=])',
-#      :hint => ['=', ' '], 
-#      :stops => '\n',
-#      :contains => @@all_inline,
-#      :open => "<h3>", :close => "</h3>\n\n",
-#      :filter => \&strip_head_eq,
-#    },
-#    :h4 => {
-#      :curpat => '(?= *={4}[^=])',
-#      :hint => ['=', ' '], 
-#      :stops => '\n',
-#      :contains => @@all_inline,
-#      :open => "<h4>", :close => "</h4>\n\n",
-#      :filter => \&strip_head_eq,
-#    },
-#    :h5 => {
-#      :curpat => '(?= *={5}[^=])',
-#      :hint => ['=', ' '], 
-#      :stops => '\n',
-#      :contains => @@all_inline,
-#      :open => "<h5>", :close => "</h5>\n\n",
-#      :filter => \&strip_head_eq,
-#    },
-#    :h6 => {
-#      :curpat => '(?= *={6,})',
-#      :hint => ['=', ' '], 
-#      :stops => '\n',
-#      :contains => @@all_inline,
-#      :open => "<h6>", :close => "</h6>\n\n",
-#      :filter => \&strip_head_eq,
-#    },
-#    :plain => {
-#      :curpat => '(?=[^\*\/_\,\^\\\\{\[\<\|])',
-#      :stops => @@inline,
-#      :hint => @@plainchars,
-#      :open => '', :close => ''
-#    },
-#    :any => { # catch-all
-#      :curpat => '(?=.)',
-#      :stops => @@inline,
-#      :open => '', :close => ''
-#    },
-#    :br => {
-#      :curpat => '(?=\\\\\\\\)',
-#      :stops => '\\\\\\\\',
-#      :hint => ['\\'],
-#      :filter => sub { return ''; },
-#      :open => '<br />', :close => '',
-#    },
-#    :esc => {
-#      :curpat => '(?=~[\S])',
-#      :stops => '~.',
-#      :hint => ['~'],
-#      :filter => sub { substr($_[0], 0, 1, ''); return $_[0]; },
-#      :open => '', :close => '',
-#    },
-#    :inowiki => {
-#      :curpat => '(?=\{{3}.*?\}*\}{3})',
-#      :stops => '.*?\}*\}{3}',
-#      :hint => ['{'],
-#      :filter => sub {
-#        substr($_[0], 0, 3, ''); 
-#        $_[0] =~ s/\}{3}$//o;
-#        $_[0] =~ s/&/&amp;/go;
-#        $_[0] =~ s/</&lt;/go;
-#        $_[0] =~ s/>/&gt;/go;
-#        return $_[0];
-#      },
-#      :open => "<tt>", :close => "</tt>",
-#    },
+    },
+    :dl => {
+      :curpat => '(?=;)',
+      :fwpat => '\n(?=;)',
+      :stops => ['blank', 'h', 'hr', 'nowiki', 'ul', 'ol', 'table'],
+      :hint => [';'],
+      :contains => ['dt', 'dd'],
+      :open => "<dl>\n", :close => "</dl>\n",
+    },
+    :dt => {
+      :curpat => '(?=;)',
+      :fwpat => '\n(?=;)',
+      :stops => '(?=:|\n)',
+      :hint => [';'],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s.sub!(/^;\s*/, '')
+        s
+      },
+      :open => "  <dt>", :close => "</dt>\n",
+    },
+    :dd => {
+      :curpat => '(?=\n|:)',
+      :fwpat => '(?:\n|:)',
+      :stops => '(?=:)|\n(?=;)',
+      :hint => [':', "\n"],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s.sub!(/(?:\n|:)\s*/, '')
+        s.sub!(/\s*$/m, '')
+        s
+      },
+      :open => "    <dd>", :close => "</dd>\n",
+    },
+    :table => {
+      :curpat => '(?= *\|.)',
+      :fwpat => '\n(?= *\|.)',
+      :stops => '\n(?= *[^\|])',
+      :contains => ['tr'],
+      :hint => ['|', ' '],
+      :open => "<table>\n", :close => "</table>\n\n",
+    },
+    :tr => {
+      :curpat => '(?= *\|)',
+      :stops => '\n',
+      :contains => ['td', 'th'],
+      :hint => ['|', ' '],
+      :filter => Proc.new {|s|
+        s.sub!(/^ */, '')
+        s.sub!(/\| *$/, '')
+        s
+      },
+      :open => "    <tr>\n", :close => "    </tr>\n",
+    },
+    :td => {
+      :curpat => '(?=\|[^=])',
+      # this gnarly regex fixes ambiguous '|' for links/imgs/nowiki in tables
+      :stops => '[^~](?=\|(?!(?:[^\[]*\]\])|(?:[^\{]*\}\})))',
+      :contains => @@all_inline,
+      :hint => ['|'],
+      :filter => Proc.new {|s|
+        s.sub!(/^ *\| */, '')
+        s.sub!(/\s*$/m, '')
+        s
+      },
+      :open => "        <td>", :close => "</td>\n",
+    },
+    :th => {
+      :curpat => '(?=\|=)',
+      # this gnarly regex fixes ambiguous '|' for links/imgs/nowiki in tables
+      :stops => '[^~](?=\|(?!(?:[^\[]*\]\])|(?:[^\{]*\}\})))',
+      :contains => @@all_inline,
+      :hint => ['|'],
+      :filter => Proc.new {|s|
+        s.sub!(/^ *\|= */, '')
+        s.sub!(/\s*$/m, '')
+        s
+      },
+      :open => "        <th>", :close => "</th>\n",
+    },
+    :ul => {
+      :curpat => '(?=(?:`| *)\*[^\*])',
+      :fwpat => '(?=\n(?:`| *)\*[^\*])',
+      :stops => ['blank', 'ip', 'h', 'nowiki', 'li', 'table', 'hr', 'dl'],
+      :contains => ['ul', 'ol', 'li'],
+      :hint => ['*', ' '],
+      :filter => Proc.new {|s|
+        s = strip_list(s)
+        s
+      },
+      :open => "<ul>\n", :close => "</ul>\n",
+    },
+    :ol => {
+      :curpat => '(?=(?:`| *)\#[^\#])',
+      :fwpat => '(?=\n(?:`| *)\#[^\#])',
+      :stops => ['blank', 'ip', 'h', 'nowiki', 'li', 'table', 'hr', 'dl'],
+      :contains => ['ul', 'ol', 'li'],
+      :hint => ['#', ' '],
+      :filter => Proc.new {|s|
+        s = strip_list(s)
+        s
+      },
+      :open => "<ol>\n", :close => "</ol>\n",
+    },
+    :li => {
+      :curpat => '(?=`[^\*\#])',
+      :fwpat => '\n(?=`[^\*\#])',
+      :stops => '\n(?=`)',
+      :hint => ['`'],
+      :filter => Proc.new {|s|
+        s.sub!(/` */, '')
+        s.chomp!
+        s
+      },
+      :contains => @@all_inline,
+      :open => "    <li>", :close => "</li>\n",
+    },
+    :nowiki => {
+      :curpat => '(?=\{\{\{ *\n)',
+      :fwpat => '\n(?=\{\{\{ *\n)',
+      :stops => "\n\}\}\} *#{@@eol}",
+      :hint => ['{'],
+      :filter => Proc.new {|s|
+        s.sub!(/^.../m, '')
+        s.sub!(/\}{3}\s*$/, '')
+        s.gsub!(/&/, '&amp;')
+        s.gsub!(/</, '&lt;')
+        s.gsub!(/>/, '&gt;')
+        s
+      },
+      :open => "<pre>", :close => "</pre>\n\n",
+    },
+    :hr => {
+      :curpat => "(?= *-{4,} *#{@@eol})",
+      :fwpat => "\n(?= *-{4,} *#{@@eol})",
+      :hint => ['-', ' '],
+      :stops => @@eol,
+      :open => "<hr />\n\n", :close => "",
+      :filter => Proc.new { "" } # ----- into the bit bucket
+    },
+    :h => { :curpat => '(?=(?:^|\n) *=)' }, # matches any heading
+    :h1 => {
+      :curpat => '(?= *=[^=])',
+      :hint => ['=', ' '], 
+      :stops => '\n',
+      :contains => @@all_inline,
+      :open => "<h1>", :close => "</h1>\n\n",
+      :filter => Proc.new {|s|
+        s = strip_leading_and_trailing_eq_and_whitespace(s)
+        s
+      },
+    },
+    :h2 => {
+      :curpat => '(?= *={2}[^=])',
+      :hint => ['=', ' '], 
+      :stops => '\n',
+      :contains => @@all_inline,
+      :open => "<h2>", :close => "</h2>\n\n",
+      :filter => Proc.new {|s|
+        s = strip_leading_and_trailing_eq_and_whitespace(s)
+        s
+      },
+    },
+    :h3 => {
+      :curpat => '(?= *={3}[^=])',
+      :hint => ['=', ' '], 
+      :stops => '\n',
+      :contains => @@all_inline,
+      :open => "<h3>", :close => "</h3>\n\n",
+      :filter => Proc.new {|s|
+        s = strip_leading_and_trailing_eq_and_whitespace(s)
+        s
+      },
+    },
+    :h4 => {
+      :curpat => '(?= *={4}[^=])',
+      :hint => ['=', ' '], 
+      :stops => '\n',
+      :contains => @@all_inline,
+      :open => "<h4>", :close => "</h4>\n\n",
+      :filter => Proc.new {|s|
+        s = strip_leading_and_trailing_eq_and_whitespace(s)
+        s
+      },
+    },
+    :h5 => {
+      :curpat => '(?= *={5}[^=])',
+      :hint => ['=', ' '], 
+      :stops => '\n',
+      :contains => @@all_inline,
+      :open => "<h5>", :close => "</h5>\n\n",
+      :filter => Proc.new {|s|
+        s = strip_leading_and_trailing_eq_and_whitespace(s)
+        s
+      },
+    },
+    :h6 => {
+      :curpat => '(?= *={6,})',
+      :hint => ['=', ' '], 
+      :stops => '\n',
+      :contains => @@all_inline,
+      :open => "<h6>", :close => "</h6>\n\n",
+      :filter => Proc.new {|s|
+        s = strip_leading_and_trailing_eq_and_whitespace(s)
+        s
+      },
+    },
+    :plain => {
+      :curpat => '(?=[^\*\/_\,\^\\\\{\[\<\|])',
+      :stops => @@inline,
+      :hint => @@plainchars,
+      :open => '', :close => ''
+    },
+    :any => { # catch-all
+      :curpat => '(?=.)',
+      :stops => @@inline,
+      :open => '', :close => ''
+    },
+    :br => {
+      :curpat => '(?=\\\\\\\\)',
+      :stops => '\\\\\\\\',
+      :hint => ['\\'],
+      :filter => Proc.new { "" },
+      :open => '<br />', :close => '',
+    },
+    :esc => {
+      :curpat => '(?=~[\S])',
+      :stops => '~.',
+      :hint => ['~'],
+      :filter => Proc.new {|s|
+        s.sub!(/^./m, '')
+        s
+      },
+      :open => '', :close => '',
+    },
+    :inowiki => {
+      :curpat => '(?=\{{3}.*?\}*\}{3})',
+      :stops => '.*?\}*\}{3}',
+      :hint => ['{'],
+      :filter => Proc.new {|s|
+        s.sub!(/^.../m, '')
+        s.sub!(/\}{3}\s*$/, '')
+        s.gsub!(/&/, '&amp;')
+        s.gsub!(/</, '&lt;')
+        s.gsub!(/>/, '&gt;')
+        s
+      },
+      :open => "<tt>", :close => "</tt>",
+    },
 #    :plug => {
 #      :curpat => '(?=\<{3}.*?\>*\>{3})',
 #      :stops => '.*?\>*\>{3}',
