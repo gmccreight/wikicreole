@@ -1,4 +1,6 @@
 class Creole
+  
+  require 'strscan'
 
   # Most of this code is ported from Jason Burnett's excellent Perl-based
   # converter which can be found here:
@@ -207,7 +209,7 @@ class Creole
       :stops => "\n\}\}\} *#{@@eol}",
       :hint => ['{'],
       :filter => Proc.new {|s|
-        s.sub!(/^.../m, '')
+        s[0,3] = ''
         s.sub!(/\}{3}\s*$/, '')
         s.gsub!(/&/, '&amp;')
         s.gsub!(/</, '&lt;')
@@ -324,7 +326,7 @@ class Creole
       :stops => '.*?\}*\}{3}',
       :hint => ['{'],
       :filter => Proc.new {|s|
-        s.sub!(/^.../m, '')
+        s[0,3] = ''
         s.sub!(/\}{3}\s*$/, '')
         s.gsub!(/&/, '&amp;')
         s.gsub!(/</, '&lt;')
@@ -444,30 +446,32 @@ class Creole
 #      },
 #      :open => 'src="', :close => '"',
 #    },
-#    :strong => {
-#      :curpat => '(?=\*\*)',
-#      :stops => '\*\*.*?\*\*',
-#      :hint => ['*'],
-#      :contains => @@all_inline,
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/\*\*$//o;
-#        return $_[0];
-#      },
-#      :open => "<strong>", :close => "</strong>",
-#    },
-#    :em => {
-#      :curpat => '(?=\/\/)',
-#      :stops => '\/\/.*?(?<!:)\/\/',
-#      :hint => ['/'],
-#      :contains => @@all_inline,
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/\/\/$//o;
-#        return $_[0];
-#      },
-#      :open => "<em>", :close => "</em>",
-#    },
+    :strong => {
+      :curpat => '(?=\*\*)',
+      :stops => '\*\*.*?\*\*',
+      :hint => ['*'],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/\*\*$/, '')
+        s
+      },
+      :open => "<strong>", :close => "</strong>",
+    },
+    :em => {
+      :curpat => '(?=\/\/)',
+      # gemhack 4 removed a negative lookback assertion (?<!:)
+      # and replaced it with [^:]  Not sure of the consequences.
+      :stops => '\/\/.*?[^:]\/\/',
+      :hint => ['/'],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/\/\/$/, '')
+        s
+      },
+      :open => "<em>", :close => "</em>",
+    },
 #    :mono => {
 #      :curpat => '(?=\#\#)',
 #      :stops => '\#\#.*?\#\#',
@@ -516,52 +520,162 @@ class Creole
 #      },
 #      :open => "<u>", :close => "</u>",
 #    },
-#    :amp => {
-#      :curpat => '(?=\&(?!\w+\;))',
-#      :stops => '.',
-#      :hint => ['&'],
-#      :filter => sub { return "&amp;"; },
-#      :open => "", :close => "",
-#    },
-#    :tm => {
-#      :curpat => '(?=\(TM\))',
-#      :stops => '\(TM\)',
-#      :hint => ['('],
-#      :filter => sub { return "&trade;"; },
-#      :open => "", :close => "",
-#    },
-#    :reg => {
-#      :curpat => '(?=\(R\))',
-#      :stops => '\(R\)',
-#      :hint => ['('],
-#      :filter => sub { return "&reg;"; },
-#      :open => "", :close => "",
-#    },
-#    :copy => {
-#      :curpat => '(?=\(C\))',
-#      :stops => '\(C\)',
-#      :hint => ['('],
-#      :filter => sub { return "&copy;"; },
-#      :open => "", :close => "",
-#    },
-#    :ndash => {
-#      :curpat => '(?=--)',
-#      :stops => '--',
-#      :hint => ['-'],
-#      :filter => sub { return "&ndash;"; },
-#      :open => "", :close => "",
-#    },
-#    :ellipsis => {
-#      :curpat => '(?=\.\.\.)',
-#      :stops => '\.\.\.',
-#      :hint => ['.'],
-#      :filter => sub { return "&hellip;"; },
-#      :open => "", :close => "",
-#    },
+    :amp => {
+      :curpat => '(?=\&(?!\w+\;))',
+      :stops => '.',
+      :hint => ['&'],
+      :filter => Proc.new { "&amp;" },
+      :open => "", :close => "",
+    },
+    :tm => {
+      :curpat => '(?=\(TM\))',
+      :stops => '\(TM\)',
+      :hint => ['('],
+      :filter => Proc.new { "&trade;" },
+      :open => "", :close => "",
+    },
+    :reg => {
+      :curpat => '(?=\(R\))',
+      :stops => '\(R\)',
+      :hint => ['('],
+      :filter => Proc.new { "&reg;" },
+      :open => "", :close => "",
+    },
+    :copy => {
+      :curpat => '(?=\(C\))',
+      :stops => '\(C\)',
+      :hint => ['('],
+      :filter => Proc.new { "&copy;" },
+      :open => "", :close => "",
+    },
+    :ndash => {
+      :curpat => '(?=--)',
+      :stops => '--',
+      :hint => ['-'],
+      :filter => Proc.new { "&ndash;" },
+      :open => "", :close => "",
+    },
+    :ellipsis => {
+      :curpat => '(?=\.\.\.)',
+      :stops => '\.\.\.',
+      :hint => ['.'],
+      :filter => Proc.new { "&hellip;" },
+      :open => "", :close => "",
+    },
   }
   
   def self.filter_string_x_with_chunk_filter_y(str, chunk)
     return @@chunks_hash[chunk][:filter].call(str)
+  end
+  
+  def self.parse(tref, chunk)
+    
+    html = ""
+    ch = nil
+  
+    pos = 0
+    lpos = 0
+    
+    loop do
+      
+      if !ch.nil? # if we already know what kind of chunk this is
+        #puts "hello"
+        s = StringScanner.new(tref)
+
+        regex = Regexp.compile(@@chunks_hash[ch][:delim])
+        #puts regex.to_s
+        
+        was_scanned_ok = false
+        while s.scan_until(regex) # find where it stops...
+          pos = s.pos
+          was_scanned_ok = true
+          #puts "again..."
+        end
+
+        if !was_scanned_ok
+          pos = tref.length                  # end of string
+        end
+        
+        #puts "pos" + pos.to_s
+        
+
+        html += @@chunks_hash[ch][:open]     # print the open tag
+
+        t = tref[lpos, pos - lpos]; # grab the chunk
+        if @@chunks_hash[ch].has_key?(:filter)   # filter it, if applicable
+          t = @@chunks_hash[ch][:filter].call(t)
+        end
+        lpos = pos  # remember where this chunk ends (where next begins)
+        if t && @@chunks_hash[ch].has_key?(:contains)  # if it contains other chunks...
+          html += parse(t, ch)         #    recurse.
+        else
+          html += t                      #    otherwise, print it
+        end
+        html += @@chunks_hash[ch][:close]       # print the close tag
+      end
+
+      if pos && pos == tref.length # we've eaten the whole string
+        break
+      else # more string to come
+        ch = nil
+        
+        fc = tref[pos, 1].to_sym # get a hint about the next chunk
+        for chunk_hinted_at in @@chunks_hash[chunk][:hints][fc].to_a
+          #puts "trying #{chunk_hinted_at} for -#{fc}- on -" + tref[pos, 2] + "-\n";
+          if tref =~ @@chunks_hash[chunk_hinted_at][:curpatcmp] # hint helped id the chunk
+             ch = chunk_hinted_at
+             break
+          end
+        end
+        
+        if ch.nil? # hint didn't help
+         
+          #check all the chunk types which this chunk contains
+          for contained_chunk in @@chunks_hash[chunk][:contains].to_a
+            contained_chunk = contained_chunk.to_sym
+            if @@chunks_hash.has_key?(contained_chunk)
+              #puts "trying #{contained_chunk} on -" + tref[pos, 2] + "-\n"
+              if tref =~ @@chunks_hash[contained_chunk][:curpatcmp] # found one
+                #puts "found #{contained_chunk}"
+                ch = contained_chunk
+                break
+              end 
+            end
+          end
+          
+          # wasn't able to find a contained chunk which matched
+          # no idea what this is.  ditch the rest and give up.
+          break if ch.nil?
+          
+        end
+        
+      end
+    end
+      
+    return html  # voila!
+  end
+  
+  # compile a regex that matches any of the patterns that interrupt the
+  # current chunk.
+  def self.delim(chunk)
+    chunk = @@chunks_hash[chunk]
+    if chunk[:stops].class.to_s == "Array"
+      regex = ""
+      for stop in chunk[:stops]
+        stop = stop.to_sym
+        if @@chunks_hash.has_key?(stop) #TODO remove
+          if @@chunks_hash[stop].has_key?(:fwpat)
+            regex += @@chunks_hash[stop][:fwpat] + "|"
+          else
+            regex += @@chunks_hash[stop][:curpat] + "|"
+          end
+        end
+      end
+      regex.chop!
+      return Regexp.compile(regex, Regexp::MULTILINE)
+    else
+      return Regexp.compile(chunk[:stops], Regexp::MULTILINE)
+    end
   end
   
   # one-time optimization of the grammar - speeds the parser up a ton
@@ -588,13 +702,13 @@ class Creole
       end
       
       if c.has_key?(:stops)
-        c[:delim] = "" #TODO
+        c[:delim] = delim(k)
       end
       
       if c.has_key?(:contains) # store hints about each chunk to speed id
         for ct in c[:contains]
           ct = ct.to_sym
-          if @@chunks_hash.has_key?(ct)
+          if @@chunks_hash.has_key?(ct) #TODO remove
             if @@chunks_hash[ct].has_key?(:hint)
               c[:hints] = {}
               for hint in @@chunks_hash[ct][:hint]
@@ -612,17 +726,12 @@ class Creole
     end
   end
   
-  def delim(s)
-    # TODO
-    return s
-  end
-  
-  def creole_parse(s)
-    return "" if s.is_str?
+  def self.creole_parse(s)
+    return "" if s.class.to_s != "String"
     return "" if s.length < 1
 
     init
-    return parse(s, "top")
+    return parse(s, :top)
   end
 
 end
