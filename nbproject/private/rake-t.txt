@@ -1,1 +1,2 @@
 (in /Users/gmccreight/projects/creole)
+rake test  # Run tests
