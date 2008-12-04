@@ -30,4 +30,9 @@ class TC_Creole < Test::Unit::TestCase
     assert_equal "head", Creole.filter_string_x_with_chunk_filter_y("head == ", :h5)
   end
   
+  def test_init
+    Creole.init
+    assert_equal 1, 1
+  end
+  
 end

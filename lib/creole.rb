@@ -563,5 +563,66 @@ class Creole
   def self.filter_string_x_with_chunk_filter_y(str, chunk)
     return @@chunks_hash[chunk][:filter].call(str)
   end
+  
+  # one-time optimization of the grammar - speeds the parser up a ton
+  def self.init 
+    return if @is_initialized
+
+    @is_initialized = true
+
+    # build an array of "plain content" characters by subtracting @specialchars
+    # from ascii printable (ascii 32 to 126)
+    for charnum in 32..126 do
+      char = charnum.chr
+      if @@specialchars.index(char).nil?
+        @@plainchars << char
+      end
+    end
+
+
+    # precompile a bunch of regexes 
+    for k in @@chunks_hash.keys do
+      c = @@chunks_hash[k]
+      if c.has_key?(:curpat)
+        c[:curpatcmp] = Regexp.compile(/\G#{c[:curpat]}/s)
+      end
+      
+      if c.has_key?(:stops)
+        c[:delim] = "" #TODO
+      end
+      
+      if c.has_key?(:contains) # store hints about each chunk to speed id
+        for ct in c[:contains]
+          ct = ct.to_sym
+          if @@chunks_hash.has_key?(ct)
+            if @@chunks_hash[ct].has_key?(:hint)
+              c[:hints] = {}
+              for hint in @@chunks_hash[ct][:hint]
+                if !c[:hints].has_key?(hint)
+                  c[:hints][hint] = []
+                end
+                c[:hints][hint] << ct
+              end
+            end
+          else
+            #puts "#{ct} does not exist"
+          end
+        end
+      end
+    end
+  end
+  
+  def delim(s)
+    # TODO
+    return s
+  end
+  
+  def creole_parse(s)
+    return "" if s.is_str?
+    return "" if s.length < 1
+
+    init
+    return parse(s, "top")
+  end
 
 end
