@@ -40,4 +40,14 @@ class TC_Creole < Test::Unit::TestCase
     assert_equal "<p><strong>Hello</strong></p>\n\n", s
   end
   
+  def test_italic
+    s = Creole.creole_parse("//Hello//")
+    assert_equal "<p><em>Hello</em></p>\n\n", s
+  end
+  
+#  def test_italic_with_spaces
+#    s = Creole.creole_parse("//Hello// **Hello**")
+#    assert_equal "<p><em>Hello</em> <strong>Hello</strong></p>\n\n", s
+#  end
+  
 end

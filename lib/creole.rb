@@ -49,8 +49,11 @@ class Creole
   # handy - used several times in %chunks
   @@eol = '(?:\n|$)'; # end of line (or string)
   
-  #gemhack 4 is not actually used anywhere... should remove
-  @@bol = '(?:^|\n)'; # beginning of line (or string)
+  @@plugin_function = nil
+  @@barelink_funtion = nil
+  @@link_function = nil
+  @@img_function = nil
+  
   
   @is_initialized = false
 
@@ -335,117 +338,127 @@ class Creole
       },
       :open => "<tt>", :close => "</tt>",
     },
-#    :plug => {
-#      :curpat => '(?=\<{3}.*?\>*\>{3})',
-#      :stops => '.*?\>*\>{3}',
-#      :hint => ['<'],
-#      :filter => sub {
-#        substr($_[0], 0, 3, ''); 
-#        $_[0] =~ s/\>{3}$//o;
-#        if($plugin_function) {
-#          return &$plugin_function($_[0]);
-#        }
-#        return "<<<$_[0]>>>";
-#      },
-#      :open => "", :close => "",
-#    },
-#    :plug2 => {
-#      :curpat => '(?=\<{2}.*?\>*\>{2})',
-#      :stops => '.*?\>*\>{2}',
-#      :hint => ['<'],
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/\>{2}$//o;
-#        if($plugin_function) {
-#          return &$plugin_function($_[0]);
-#        }
-#        return "<<$_[0]>>";
-#      },
-#      :open => "", :close => "",
-#    },
-#    :ilink => {
-#      :curpat => '(?=(?:https?|ftp):\/\/)',
-#      :stops => '(?=[[:punct:]]?(?:\s|$))',
-#      :hint => ['h', 'f'],
-#      :filter => sub {
-#        $_[0] =~ s/^\s*//o;
-#        $_[0] =~ s/\s*$//o;
-#        if($barelink_function) {
-#          $_[0] = &$barelink_function($_[0]);
-#        }
-#        return "href=\"$_[0]\">$_[0]"; },
-#      :open => "<a ", close=> "</a>",
-#    },
-#    :link => {
-#      :curpat => '(?=\[\[[^\n]+?\]\])',
-#      :stops => '\]\]',
-#      :hint => ['['],
-#      :contains => ['href', 'atext'],
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        substr($_[0], -2, 2, ''); 
-#        $_[0] .= "|$_[0]" unless $_[0] =~ tr/|/|/; # text = url unless given
-#        return $_[0];
-#      },
-#      :open => "<a ", :close => "</a>",
-#    },
-#    :href => {
-#      :curpat => '(?=[^\|])',
-#      :stops => '(?=\|)',
-#      :filter => sub { 
-#        $_[0] =~ s/^\s*//o; 
-#        $_[0] =~ s/\s*$//o; 
-#        if($link_function) {
-#          $_[0] = &$link_function($_[0]);
-#        }
-#        return $_[0]; 
-#      },
-#      :open => 'href="', :close => '">',
-#    },
-#    :atext => {
-#      :curpat => '(?=\|)',
-#      :stops => '\n',
-#      :hint => ['|'],
-#      :contains => @@all_inline,
-#      :filter => sub { 
-#        $_[0] =~ s/^\|\s*//o; 
-#        $_[0] =~ s/\s*$//o; 
-#        return $_[0]; 
-#      },
-#      :open => '', :close => '',
-#    },
-#    :img => {
-#      :curpat => '(?=\{\{[^\{][^\n]*?\}\})',
-#      :stops => '\}\}',
-#      :hint => ['{'],
-#      :contains => ['imgsrc', 'imgalt'],
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/\}\}$//o;
-#        return $_[0];
-#      },
-#      :open => "<img ", :close => " />",
-#    },
-#    :imgalt => {
-#      :curpat => '(?=\|)',
-#      :stops => '\n',
-#      :hint => ['|'],
-#      :filter => sub { $_[0] =~ s/^\|\s*//o; $_[0] =~ s/\s*$//o; return $_[0]; },
-#      :open => ' alt="', :close => '"',
-#    },
-#    :imgsrc => {
-#      :curpat => '(?=[^\|])',
-#      :stops => '(?=\|)',
-#      :filter => sub { 
-#        $_[0] =~ s/^\s*//o; 
-#        $_[0] =~ s/\s*$//o; 
-#        if($img_function) {
-#          $_[0] = &$img_function($_[0]);
-#        }
-#        return $_[0]; 
-#      },
-#      :open => 'src="', :close => '"',
-#    },
+    :plug => {
+      :curpat => '(?=\<{3}.*?\>*\>{3})',
+      :stops => '.*?\>*\>{3}',
+      :hint => ['<'],
+      :filter => Proc.new {|s|
+        s[0,3] = ''
+        s.sub!(/\>{3}$/, '')
+        if !@@plugin_function.nil?
+          s = plugin_function.call(s)
+        else
+          s = "<<<#{s}>>>"
+        end
+        s
+      },
+      :open => "", :close => "",
+    },
+    :plug2 => {
+      :curpat => '(?=\<{2}.*?\>*\>{2})',
+      :stops => '.*?\>*\>{2}',
+      :hint => ['<'],
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/\>{2}$/, '')
+        if !@@plugin_function.nil?
+          s = plugin_function.call(s)
+        else
+          s = "<<#{s}>>"
+        end
+        s
+      },
+      :open => "", :close => "",
+    },
+    :ilink => {
+      :curpat => '(?=(?:https?|ftp):\/\/)',
+      :stops => '(?=[[:punct:]]?(?:\s|$))',
+      :hint => ['h', 'f'],
+      :filter => Proc.new {|s|
+        s.sub!(/^\s*/, '')
+        s.sub!(/\s*$/, '')
+        if !@@barelink_function.nil?
+          s = barelink_function.call(s)
+        end  
+        s = "href=\"#{s}\">#{s}"
+        s
+      },
+      :open => "<a ", :close=> "</a>",
+    },
+    :link => {
+      :curpat => '(?=\[\[[^\n]+?\]\])',
+      :stops => '\]\]',
+      :hint => ['['],
+      :contains => ['href', 'atext'],
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s[-2,2] = ''
+        s += "|#{s}" if ! s =~ /|/; # text = url unless given
+        s
+      },
+      :open => "<a ", :close => "</a>",
+    },
+    :href => {
+      :curpat => '(?=[^\|])',
+      :stops => '(?=\|)',
+      :filter => Proc.new {|s|
+        s.sub!(/^\s*/, '')
+        s.sub!(/\s*$/, '')
+        if !@@link_function.nil?
+          s = link_function.call(s)
+        end
+        s
+      },
+      :open => 'href="', :close => '">',
+    },
+   :atext => {
+      :curpat => '(?=\|)',
+      :stops => '\n',
+      :hint => ['|'],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s.sub!(/^\|\s*/, '')
+        s.sub!(/\s*$/, '')
+        s
+      },
+      :open => '', :close => '',
+   },
+   :img => {
+      :curpat => '(?=\{\{[^\{][^\n]*?\}\})',
+      :stops => '\}\}',
+      :hint => ['{'],
+      :contains => ['imgsrc', 'imgalt'],
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/\}\}$/, '')
+        s
+      },
+      :open => "<img ", :close => " />",
+   },
+   :imgalt => {
+      :curpat => '(?=\|)',
+      :stops => '\n',
+      :hint => ['|'],
+      :filter => Proc.new {|s|
+        s.sub!(/^\|\s*/, '')
+        s.sub!(/\s*$/, '')
+        s
+      },
+      :open => ' alt="', :close => '"',
+   },
+   :imgsrc => {
+      :curpat => '(?=[^\|])',
+      :stops => '(?=\|)',
+      :filter => Proc.new {|s|
+        s.sub!(/^\|\s*/, '')
+        s.sub!(/\s*$/, '')
+        if !@@img_function.nil?
+          s = img_function.call(s)
+        end
+        s
+      },
+      :open => 'src="', :close => '"',
+   },
     :strong => {
       :curpat => '(?=\*\*)',
       :stops => '\*\*.*?\*\*',
@@ -472,54 +485,54 @@ class Creole
       },
       :open => "<em>", :close => "</em>",
     },
-#    :mono => {
-#      :curpat => '(?=\#\#)',
-#      :stops => '\#\#.*?\#\#',
-#      :hint => ['#'],
-#      :contains => @@all_inline,
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/\#\#$//o;
-#        return $_[0];
-#      },
-#      :open => "<tt>", :close => "</tt>",
-#    },
-#    :sub => {
-#      :curpat => '(?=,,)',
-#      :stops => ',,.*?,,',
-#      :hint => [','],
-#      :contains => @@all_inline,
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/\,\,$//o;
-#        return $_[0];
-#      },
-#      :open => "<sub>", :close => "</sub>",
-#    },
-#    :sup => {
-#      :curpat => '(?=\^\^)',
-#      :stops => '\^\^.*?\^\^',
-#      :hint => ['^'],
-#      :contains => @@all_inline,
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/\^\^$//o;
-#        return $_[0];
-#      },
-#      :open => "<sup>", :close => "</sup>",
-#    },
-#    :u => {
-#      :curpat => '(?=__)',
-#      :stops => '__.*?__',
-#      :hint => ['_'],
-#      :contains => @@all_inline,
-#      :filter => sub {
-#        substr($_[0], 0, 2, ''); 
-#        $_[0] =~ s/__$//o;
-#        return $_[0];
-#      },
-#      :open => "<u>", :close => "</u>",
-#    },
+    :mono => {
+      :curpat => '(?=\#\#)',
+      :stops => '\#\#.*?\#\#',
+      :hint => ['#'],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/\#\#$/, '')
+        s
+      },
+      :open => "<tt>", :close => "</tt>",
+    },
+    :sub => {
+      :curpat => '(?=,,)',
+      :stops => ',,.*?,,',
+      :hint => [','],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/\,\,$/, '')
+        s
+      },
+      :open => "<sub>", :close => "</sub>",
+    },
+    :sup => {
+      :curpat => '(?=\^\^)',
+      :stops => '\^\^.*?\^\^',
+      :hint => ['^'],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/\^\^$/, '')
+        s
+      },
+      :open => "<sup>", :close => "</sup>",
+    },
+    :u => {
+      :curpat => '(?=__)',
+      :stops => '__.*?__',
+      :hint => ['_'],
+      :contains => @@all_inline,
+      :filter => Proc.new {|s|
+        s[0,2] = ''
+        s.sub!(/__$/, '')
+        s
+      },
+      :open => "<u>", :close => "</u>",
+    },
     :amp => {
       :curpat => '(?=\&(?!\w+\;))',
       :stops => '.',
@@ -568,91 +581,96 @@ class Creole
     return @@chunks_hash[chunk][:filter].call(str)
   end
   
-  def self.parse(tref, chunk)
-    
-    html = ""
-    ch = nil
+  def self.say(message)
+    if message.class.to_s != "String"
+      message = message.to_s
+    end
+    puts "say --->" + message + "<---"
+  end
   
+  def self.parse(tref, chunk)
+  
+    html = ""
+    sub_chunk = nil
     pos = 0
-    lpos = 0
+    last_pos = 0
     
-    loop do
-      
-      if !ch.nil? # if we already know what kind of chunk this is
-        #puts "hello"
-        s = StringScanner.new(tref)
+    scanner = StringScanner.new(tref)
 
-        regex = Regexp.compile(@@chunks_hash[ch][:delim])
-        #puts regex.to_s
+    loop do
+
+      if !sub_chunk.nil? # we've determined what type of sub_chunk this is
+
+        regex = Regexp.compile(@@chunks_hash[sub_chunk][:delim])
         
         was_scanned_ok = false
-        while s.scan_until(regex) # find where it stops...
-          pos = s.pos
+        while scanner.scan(regex) # find where it stops...
+          pos = scanner.pos
+          #say scanner.post_match
           was_scanned_ok = true
-          #puts "again..."
         end
 
         if !was_scanned_ok
           pos = tref.length                  # end of string
         end
-        
-        #puts "pos" + pos.to_s
-        
 
-        html += @@chunks_hash[ch][:open]     # print the open tag
+        html += @@chunks_hash[sub_chunk][:open]     # print the open tag
 
-        t = tref[lpos, pos - lpos]; # grab the chunk
-        if @@chunks_hash[ch].has_key?(:filter)   # filter it, if applicable
-          t = @@chunks_hash[ch][:filter].call(t)
+        t = tref[last_pos, pos - last_pos] # grab the chunk
+        #say chunk.to_s + ":" + sub_chunk.to_s + ":" + t
+        if @@chunks_hash[sub_chunk].has_key?(:filter)   # filter it, if applicable
+          t = @@chunks_hash[sub_chunk][:filter].call(t)
         end
-        lpos = pos  # remember where this chunk ends (where next begins)
-        if t && @@chunks_hash[ch].has_key?(:contains)  # if it contains other chunks...
-          html += parse(t, ch)         #    recurse.
+        #say chunk.to_s + ":" + sub_chunk.to_s + ":" + t
+        last_pos = pos  # remember where this chunk ends (where next begins)
+        if t && @@chunks_hash[sub_chunk].has_key?(:contains)  # if it contains other chunks...
+          html += parse(t, sub_chunk)         #    recurse.
         else
-          html += t                      #    otherwise, print it
+          html += t                    # otherwise, print it
         end
-        html += @@chunks_hash[ch][:close]       # print the close tag
+        
+        html += @@chunks_hash[sub_chunk][:close]       # print the close tag
+        
       end
 
       if pos && pos == tref.length # we've eaten the whole string
         break
       else # more string to come
-        ch = nil
+        sub_chunk = nil
         
         fc = tref[pos, 1].to_sym # get a hint about the next chunk
         for chunk_hinted_at in @@chunks_hash[chunk][:hints][fc].to_a
           #puts "trying #{chunk_hinted_at} for -#{fc}- on -" + tref[pos, 2] + "-\n";
           if tref =~ @@chunks_hash[chunk_hinted_at][:curpatcmp] # hint helped id the chunk
-             ch = chunk_hinted_at
+             sub_chunk = chunk_hinted_at
              break
           end
         end
         
-        if ch.nil? # hint didn't help
+        if sub_chunk.nil? # hint didn't help
          
           #check all the chunk types which this chunk contains
           for contained_chunk in @@chunks_hash[chunk][:contains].to_a
             contained_chunk = contained_chunk.to_sym
             if @@chunks_hash.has_key?(contained_chunk)
-              #puts "trying #{contained_chunk} on -" + tref[pos, 2] + "-\n"
+              #puts "trying #{contained_chunk} on -" + tref[pos, 4] + "-\n"
               if tref =~ @@chunks_hash[contained_chunk][:curpatcmp] # found one
-                #puts "found #{contained_chunk}"
-                ch = contained_chunk
+                sub_chunk = contained_chunk
                 break
-              end 
+              end
             end
           end
           
           # wasn't able to find a contained chunk which matched
           # no idea what this is.  ditch the rest and give up.
-          break if ch.nil?
+          break if sub_chunk.nil?
           
         end
         
       end
     end
-      
-    return html  # voila!
+    
+    return html # voila!
   end
   
   # compile a regex that matches any of the patterns that interrupt the
