@@ -618,7 +618,7 @@ class Creole
 
       if pos && pos == tref.length # we've eaten the whole string
         break
-      else # more string to come
+      else ## more string to come
         sub_chunk = get_sub_chunk_for(tref, chunk, pos)
       end
       
@@ -631,15 +631,15 @@ class Creole
 
     first_char = tref[pos, 1].to_sym # get a hint about the next chunk
     for chunk_hinted_at in @@chunks_hash[chunk][:hints][first_char].to_a
-      #puts "trying hint #{chunk_hinted_at} for -#{fc}- on -" + tref[pos, 2] + "-\n";
+      #puts "trying hint #{chunk_hinted_at} for -#{first_char}- on -" + tref[pos, 2] + "-\n";
       if tref.index(@@chunks_hash[chunk_hinted_at][:curpatcmp], pos) # hint helped id the chunk
-         return chunk_hinted_at
+        return chunk_hinted_at
       end
     end
 
     # the hint didn't help. Check all the chunk types which this chunk contains
     for contained_chunk in @@chunks_hash[chunk][:contains].to_a
-      #puts "trying contained chunk #{contained_chunk} on -" + tref[pos, 4] + "- within chunk #{chunk.to_s}\n"
+      #puts "trying contained chunk #{contained_chunk} on -" + tref[pos, 2] + "- within chunk #{chunk.to_s}\n"
       if tref.index(@@chunks_hash[contained_chunk.to_sym][:curpatcmp], pos) # found one
         return contained_chunk.to_sym
       end
@@ -656,12 +656,10 @@ class Creole
       regex = ""
       for stop in chunk[:stops]
         stop = stop.to_sym
-        if @@chunks_hash.has_key?(stop) #TODO remove
-          if @@chunks_hash[stop].has_key?(:fwpat)
-            regex += @@chunks_hash[stop][:fwpat] + "|"
-          else
-            regex += @@chunks_hash[stop][:curpat] + "|"
-          end
+        if @@chunks_hash[stop].has_key?(:fwpat)
+          regex += @@chunks_hash[stop][:fwpat] + "|"
+        else
+          regex += @@chunks_hash[stop][:curpat] + "|"
         end
       end
       regex.chop!
@@ -686,7 +684,6 @@ class Creole
       end
     end
 
-
     # precompile a bunch of regexes 
     for k in @@chunks_hash.keys do
       c = @@chunks_hash[k]
@@ -701,20 +698,18 @@ class Creole
       if c.has_key?(:contains) # store hints about each chunk to speed id
         for ct in c[:contains]
           ct = ct.to_sym
-          if @@chunks_hash.has_key?(ct) #TODO remove
-            if @@chunks_hash[ct].has_key?(:hint)
-              c[:hints] = {}
-              for hint in @@chunks_hash[ct][:hint]
-                hint = hint.to_sym
-                if !c[:hints].has_key?(hint)
-                  c[:hints][hint] = []
-                end
-                c[:hints][hint] << ct
+          
+          if @@chunks_hash[ct].has_key?(:hint)
+            c[:hints] = {}
+            for hint in @@chunks_hash[ct][:hint]
+              hint = hint.to_sym
+              if !c[:hints].has_key?(hint)
+                c[:hints][hint] = []
               end
+              c[:hints][hint] << ct
             end
-          else
-            #puts "#{ct} does not exist"
           end
+
         end
       end
     end
