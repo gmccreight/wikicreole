@@ -35,6 +35,15 @@ class TC_Creole < Test::Unit::TestCase
     assert_equal 1, 1
   end
   
+  def test_sub_chunk_for
+    Creole.init
+    str = "//Hello// **Hello**"
+    assert_equal :p, Creole.get_sub_chunk_for(str, :top, 0)
+    assert_equal :em, Creole.get_sub_chunk_for(str, :p, 0)
+    assert_equal :plain, Creole.get_sub_chunk_for(str, :p, 9)
+    assert_equal :strong, Creole.get_sub_chunk_for(str, :p, 10)
+  end
+  
   def test_strong
     s = Creole.creole_parse("**Hello**")
     assert_equal "<p><strong>Hello</strong></p>\n\n", s
@@ -45,9 +54,19 @@ class TC_Creole < Test::Unit::TestCase
     assert_equal "<p><em>Hello</em></p>\n\n", s
   end
   
-#  def test_italic_with_spaces
-#    s = Creole.creole_parse("//Hello// **Hello**")
-#    assert_equal "<p><em>Hello</em> <strong>Hello</strong></p>\n\n", s
-#  end
+  def test_italic_bold_with_no_spaces
+    s = Creole.creole_parse("//Hello//**Hello**")
+    assert_equal "<p><em>Hello</em><strong>Hello</strong></p>\n\n", s
+  end
+  
+  def test_italic_bold_with_a_space_in_the_middle
+    s = Creole.creole_parse("//Hello// **Hello**")
+    assert_equal "<p><em>Hello</em> <strong>Hello</strong></p>\n\n", s
+  end
+  
+  def test_two_paragraph_italic_bold_with_a_space_in_the_middle
+    s = Creole.creole_parse("//Hello// **Hello**\n\n//Hello// **Hello**")
+    assert_equal "<p><em>Hello</em> <strong>Hello</strong></p>\n\n<p><em>Hello</em> <strong>Hello</strong></p>\n\n", s
+  end
   
 end
