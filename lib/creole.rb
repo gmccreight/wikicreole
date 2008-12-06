@@ -1,6 +1,4 @@
 class Creole
-  
-  require 'strscan'
 
   # Most of this code is ported from Jason Burnett's excellent Perl-based
   # converter which can be found here:
@@ -581,53 +579,32 @@ class Creole
     return @@chunks_hash[chunk][:filter].call(str)
   end
   
-  def self.say(message)
-    if message.class.to_s != "String"
-      message = message.to_s
-    end
-    puts "say --->" + message + "<---"
-  end
-  
   def self.parse(tref, chunk)
   
-    html = ""
     sub_chunk = nil
     pos = 0
     last_pos = 0
-    
-    scanner = StringScanner.new(tref)
+    html = ""
 
     loop do
 
-      if !sub_chunk.nil? # we've determined what type of sub_chunk this is
+      if sub_chunk # we've determined what type of sub_chunk this is
         
-        #say @@chunks_hash[sub_chunk][:delim]
-
-        regex = Regexp.compile(@@chunks_hash[sub_chunk][:delim])
-        
-        if sub_chunk.to_s == "plain"
-          #puts regex.to_s
-          #puts chunk.to_s + ":" + pos.to_s + ":" + sub_chunk.to_s + ":" + tref
-        end
-        
-        if tref.index(regex, pos) # find where it stops...
+        # find out where the sub chunk stops.
+        if tref.index(@@chunks_hash[sub_chunk][:delim], pos)
           pos = Regexp.last_match.end(0)
         else
-          pos = tref.length                  # end of string
-        end
-        
-        if sub_chunk.to_s == "plain"
-          #puts "pos after scanning:" + pos.to_s
+          pos = tref.length
         end
 
-        html += @@chunks_hash[sub_chunk][:open]     # print the open tag
+        html += @@chunks_hash[sub_chunk][:open]
 
         t = tref[last_pos, pos - last_pos] # grab the chunk
-        #say chunk.to_s + ":" + sub_chunk.to_s + ":" + t
+
         if @@chunks_hash[sub_chunk].has_key?(:filter)   # filter it, if applicable
           t = @@chunks_hash[sub_chunk][:filter].call(t)
         end
-        #say chunk.to_s + ":" + sub_chunk.to_s + ":" + t
+        
         last_pos = pos  # remember where this chunk ends (where next begins)
         if t && @@chunks_hash[sub_chunk].has_key?(:contains)  # if it contains other chunks...
           html += parse(t, sub_chunk)         #    recurse.
@@ -643,11 +620,11 @@ class Creole
         break
       else # more string to come
         sub_chunk = get_sub_chunk_for(tref, chunk, pos)
-        #puts chunk.to_s + ":" + pos.to_s + ":" + sub_chunk.to_s + ":" + tref
       end
+      
     end
     
-    return html # voila!
+    return html
   end
   
   def self.get_sub_chunk_for(tref, chunk, pos)
@@ -664,7 +641,6 @@ class Creole
     for contained_chunk in @@chunks_hash[chunk][:contains].to_a
       #puts "trying contained chunk #{contained_chunk} on -" + tref[pos, 4] + "- within chunk #{chunk.to_s}\n"
       if tref.index(@@chunks_hash[contained_chunk.to_sym][:curpatcmp], pos) # found one
-        #puts @@chunks_hash[contained_chunk.to_sym][:curpatcmp]
         return contained_chunk.to_sym
       end
     end
