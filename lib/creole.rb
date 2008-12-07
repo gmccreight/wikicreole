@@ -115,7 +115,7 @@ class Creole
       :hint => [':', "\n"],
       :contains => @@all_inline,
       :filter => Proc.new {|s|
-        s.sub!(/(?:\n|:)\s*/, '')
+        s.sub!(/(?:\n|:)\s*/m, '')
         s.sub!(/\s*$/m, '')
         s
       },
@@ -590,9 +590,21 @@ class Creole
 
       if sub_chunk # we've determined what type of sub_chunk this is
         
+        puts sub_chunk.to_s
+        puts @@chunks_hash[sub_chunk][:delim].to_s
+        
+        this_is_the_special_one = false
+        
         # find out where the sub chunk stops.
         if tref.index(@@chunks_hash[sub_chunk][:delim], pos)
           pos = Regexp.last_match.end(0)
+          if Regexp.last_match.end(0) == 61
+            this_is_the_special_one = true
+#            puts tref
+#            puts "--->" + tref[61,10] + "<---"
+#            puts tref.length
+#            puts last_pos
+          end
         else
           pos = tref.length
         end
@@ -601,9 +613,13 @@ class Creole
 
         t = tref[last_pos, pos - last_pos] # grab the chunk
 
+        puts "----->" + t + "<-----" if this_is_the_special_one
         if @@chunks_hash[sub_chunk].has_key?(:filter)   # filter it, if applicable
           t = @@chunks_hash[sub_chunk][:filter].call(t)
         end
+        puts "----->" + t + "<-----" if this_is_the_special_one
+        
+        exit if this_is_the_special_one
         
         last_pos = pos  # remember where this chunk ends (where next begins)
         if t && @@chunks_hash[sub_chunk].has_key?(:contains)  # if it contains other chunks...
