@@ -629,8 +629,8 @@ class Creole
   
   def self.get_sub_chunk_for(tref, chunk, pos)
 
-    first_char = tref[pos, 1].to_sym # get a hint about the next chunk
-    for chunk_hinted_at in @@chunks_hash[chunk][:hints][first_char].to_a
+    first_char = tref[pos, 1] # get a hint about the next chunk
+    for chunk_hinted_at in @@chunks_hash[chunk][:calculated_hint_array_for][first_char].to_a
       #puts "trying hint #{chunk_hinted_at} for -#{first_char}- on -" + tref[pos, 2] + "-\n";
       if tref.index(@@chunks_hash[chunk_hinted_at][:curpatcmp], pos) # hint helped id the chunk
         return chunk_hinted_at
@@ -696,23 +696,24 @@ class Creole
       end
       
       if c.has_key?(:contains) # store hints about each chunk to speed id
+        c[:calculated_hint_array_for] = {}
+        
         for ct in c[:contains]
           ct = ct.to_sym
           
           if @@chunks_hash[ct].has_key?(:hint)
-            c[:hints] = {}
             for hint in @@chunks_hash[ct][:hint]
-              hint = hint.to_sym
-              if !c[:hints].has_key?(hint)
-                c[:hints][hint] = []
+              if !c[:calculated_hint_array_for].has_key?(hint)
+                c[:calculated_hint_array_for][hint] = []
               end
-              c[:hints][hint] << ct
+              c[:calculated_hint_array_for][hint] << ct
             end
           end
 
         end
       end
     end
+    
   end
   
   def self.creole_parse(s)

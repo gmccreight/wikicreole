@@ -37,3 +37,5 @@ don't try it in {{{ __ inline nowiki __ }}}, but feel free to put it
 no point in trying to put ^^ superscript ^^ inside nowiki blocks either
 }}}
 
+: should also be able to put ** bold ^^ and superscript ^^ ** in an
+indented paragraph
