@@ -1,6 +1,3 @@
-: should also be able to put ** bold ^^ and superscript ^^ ** in an
-indented paragraph
-
 ; how 'bout  **__ Underlined bold __** in a definition list?
 : not to mention, the actual // italicized definition //
 

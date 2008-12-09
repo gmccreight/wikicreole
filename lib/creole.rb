@@ -590,38 +590,38 @@ class Creole
 
       if sub_chunk # we've determined what type of sub_chunk this is
         
-        puts sub_chunk.to_s
-        puts @@chunks_hash[sub_chunk][:delim].to_s
         
-        this_is_the_special_one = false
-        
-        # find out where the sub chunk stops.
-        if tref.index(@@chunks_hash[sub_chunk][:delim], pos)
+#        while tref.index(Regexp.compile('\G.*' + @@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
+#          end_of_match = Regexp.last_match.end(0)
+#          if end_of_match == pos
+#            break
+#          else
+#            pos = end_of_match
+#          end
+#        end
+#        
+#        if pos == last_pos
+#          pos = tref.length
+#        end
+
+        if tref.index(Regexp.compile(@@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
           pos = Regexp.last_match.end(0)
-          if Regexp.last_match.end(0) == 61
-            this_is_the_special_one = true
-#            puts tref
-#            puts "--->" + tref[61,10] + "<---"
-#            puts tref.length
-#            puts last_pos
-          end
-        else
+        else 
           pos = tref.length
         end
+        
+        #puts "--->#{sub_chunk.to_s}:#{last_pos}:#{pos}:#{tref}<---"
 
         html += @@chunks_hash[sub_chunk][:open]
 
         t = tref[last_pos, pos - last_pos] # grab the chunk
 
-        puts "----->" + t + "<-----" if this_is_the_special_one
         if @@chunks_hash[sub_chunk].has_key?(:filter)   # filter it, if applicable
           t = @@chunks_hash[sub_chunk][:filter].call(t)
         end
-        puts "----->" + t + "<-----" if this_is_the_special_one
-        
-        exit if this_is_the_special_one
         
         last_pos = pos  # remember where this chunk ends (where next begins)
+        
         if t && @@chunks_hash[sub_chunk].has_key?(:contains)  # if it contains other chunks...
           html += parse(t, sub_chunk)         #    recurse.
         else
@@ -669,7 +669,7 @@ class Creole
   def self.delim(chunk)
     chunk = @@chunks_hash[chunk]
     if chunk[:stops].class.to_s == "Array"
-      regex = ""
+      regex = ''
       for stop in chunk[:stops]
         stop = stop.to_sym
         if @@chunks_hash[stop].has_key?(:fwpat)
@@ -679,9 +679,9 @@ class Creole
         end
       end
       regex.chop!
-      return Regexp.compile(regex, Regexp::MULTILINE)
+      return regex
     else
-      return Regexp.compile(chunk[:stops], Regexp::MULTILINE)
+      return chunk[:stops]
     end
   end
   

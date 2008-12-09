@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'test/unit'
-require 'Creole'
+require 'creole'
 
 class TC_Creole < Test::Unit::TestCase
 
