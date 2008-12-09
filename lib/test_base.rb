@@ -18,6 +18,7 @@ class TC_Creole < Test::Unit::TestCase
   def test_strip_list
     assert_equal "`head", Creole.strip_list(" *head")
     assert_equal "\n`head", Creole.strip_list("\n *head")
+    assert_equal "`**head", Creole.strip_list("***head")
   end
   
   def test_chunk_filter_lambdas

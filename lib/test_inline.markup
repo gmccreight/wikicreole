@@ -39,3 +39,10 @@ no point in trying to put ^^ superscript ^^ inside nowiki blocks either
 
 : should also be able to put ** bold ^^ and superscript ^^ ** in an
 indented paragraph
+
+; how 'bout  **__ Underlined bold __** in a definition list?
+: not to mention, the actual // italicized definition //
+
+* first item
+## ## monospace ** with bold ** as first subitem in numbered list ##
+*** another sublist after // with italics //

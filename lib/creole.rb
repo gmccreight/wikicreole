@@ -12,20 +12,8 @@ class Creole
 	
   # strip list markup trickery
   def self.strip_list(s)
-    
-    # gemhack 4: It appears that this removes a space (or any number of ` chars)
-    # prior to a * or # char and replaces them with a single `.  I'm not sure
-    # that makes sense.  It seems that if there was no `, then one shouldn't be
-    # added, and if there were multiple of them, then multiple should be added.
-    # That said, Jason's a smart dude, so there may be more to this than meets
-    # the eye.
-    s.gsub!(/(?:`*| *)[\*\#]/, '`')
-    
-    # gemhack 4: I'm dubious about the need for this, however, I'm not totally
-    # sure it's not needed, so I'm going to leave it in.  It seems like it
-    # would serve the same function as the line above since it simply replaces
-    # the contents after the \n with a `, much like the line above.
-    s.gsub!(/\n(?:`*| *)[\*\#]/, "\n`")
+    s.sub!(/(?:`*| *)[\*\#]/, '`')
+    s.gsub!(/\n(?:`*| *)[\*\#]/m, "\n`")
     return s
   end
   
@@ -83,7 +71,7 @@ class Creole
       :contains => ['p', 'ip'],
       :filter => Proc.new {|s|
         s.sub!(/:/, '')
-        s.sub!(/\n:/, "\n")
+        s.sub!(/\n:/m, "\n")
         s
       },
       :open => "<div style=\"margin-left: 2em\">", :close => "</div>\n",
@@ -590,24 +578,25 @@ class Creole
 
       if sub_chunk # we've determined what type of sub_chunk this is
         
-        
-#        while tref.index(Regexp.compile('\G.*' + @@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
-#          end_of_match = Regexp.last_match.end(0)
-#          if end_of_match == pos
-#            break
-#          else
-#            pos = end_of_match
-#          end
-#        end
-#        
-#        if pos == last_pos
-#          pos = tref.length
-#        end
+        if sub_chunk == :dd
+          while tref.index(Regexp.compile('\G.*' + @@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
+            end_of_match = Regexp.last_match.end(0)
+            if end_of_match == pos
+              break
+            else
+              pos = end_of_match
+            end
+          end
 
-        if tref.index(Regexp.compile(@@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
-          pos = Regexp.last_match.end(0)
-        else 
-          pos = tref.length
+          if pos == last_pos
+            pos = tref.length
+          end
+        else
+          if tref.index(Regexp.compile(@@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
+            pos = Regexp.last_match.end(0)
+          else 
+            pos = tref.length
+          end
         end
         
         #puts "--->#{sub_chunk.to_s}:#{last_pos}:#{pos}:#{tref}<---"
