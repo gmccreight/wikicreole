@@ -35,10 +35,10 @@ class Creole
   # handy - used several times in %chunks
   @@eol = '(?:\n|$)'; # end of line (or string)
   
-  @@plugin_function = nil
-  @@barelink_funtion = nil
-  @@link_function = nil
-  @@img_function = nil
+  @plugin_function = nil
+  @barelink_funtion = nil
+  @link_function = nil
+  @img_function = nil
   
   
   @is_initialized = false
@@ -331,8 +331,8 @@ class Creole
       :filter => Proc.new {|s|
         s[0,3] = ''
         s.sub!(/\>{3}$/, '')
-        if !@@plugin_function.nil?
-          s = plugin_function.call(s)
+        if !@plugin_function.nil?
+          s = @plugin_function.call(s)
         else
           s = "<<<#{s}>>>"
         end
@@ -347,8 +347,8 @@ class Creole
       :filter => Proc.new {|s|
         s[0,2] = ''
         s.sub!(/\>{2}$/, '')
-        if !@@plugin_function.nil?
-          s = plugin_function.call(s)
+        if !@plugin_function.nil?
+          s = @plugin_function.call(s)
         else
           s = "<<#{s}>>"
         end
@@ -363,8 +363,8 @@ class Creole
       :filter => Proc.new {|s|
         s.sub!(/^\s*/, '')
         s.sub!(/\s*$/, '')
-        if !@@barelink_function.nil?
-          s = barelink_function.call(s)
+        if !@barelink_function.nil?
+          s = @barelink_function.call(s)
         end  
         s = "href=\"#{s}\">#{s}"
         s
@@ -379,8 +379,8 @@ class Creole
       :filter => Proc.new {|s|
         s[0,2] = ''
         s[-2,2] = ''
-        s += "|#{s}" if ! s =~ /|/; # text = url unless given
-        s
+        s += "|#{s}" if ! s.index(/\|/) # text = url unless given
+        s      
       },
       :open => "<a ", :close => "</a>",
     },
@@ -390,8 +390,8 @@ class Creole
       :filter => Proc.new {|s|
         s.sub!(/^\s*/, '')
         s.sub!(/\s*$/, '')
-        if !@@link_function.nil?
-          s = link_function.call(s)
+        if !@link_function.nil?
+          s = @link_function.call(s)
         end
         s
       },
@@ -438,8 +438,8 @@ class Creole
       :filter => Proc.new {|s|
         s.sub!(/^\|\s*/, '')
         s.sub!(/\s*$/, '')
-        if !@@img_function.nil?
-          s = img_function.call(s)
+        if !@img_function.nil?
+          s = @img_function.call(s)
         end
         s
       },
@@ -609,6 +609,8 @@ class Creole
           t = @@chunks_hash[sub_chunk][:filter].call(t)
         end
         
+        #puts t if sub_chunk == :link
+        
         last_pos = pos  # remember where this chunk ends (where next begins)
         
         if t && @@chunks_hash[sub_chunk].has_key?(:contains)  # if it contains other chunks...
@@ -727,6 +729,93 @@ class Creole
 
     init
     return parse(s, :top)
+  end
+  
+  # User supplied custom functions
+  
+  def self.creole_plugin(func)
+    @plugin_function = func
+  end
+
+  def self.creole_link(func)
+    @link_function = func
+  end
+  
+  def self.creole_barelink(func)
+    @barelink_function = func
+  end
+
+  def self.creole_img(func)
+    @img_function = func
+  end
+  
+  def creole_customlinks
+    @@chunks_hash[:href][:open] = ""
+    @@chunks_hash[:href][:close] = ""
+    @@chunks_hash[:link][:open] = ""
+    @@chunks_hash[:link][:close] = ""
+    @@chunks_hash[:link].delete(:contains)
+    @@chunks_hash[:link][:filter] = Proc.new {|s| 
+      if @link_function
+        s = @link_function.call(s)
+      end
+      s
+    }
+  end
+
+
+  def creole_custombarelinks
+    @@chunks_hash[:ilink][:open] = ""
+    @@chunks_hash[:ilink][:close] = ""
+    @@chunks_hash[:ilink][:filter] = Proc.new {|s| 
+      if @barelink_function
+        s = @barelink_function.call(s)
+      end
+      s
+    }
+  end
+
+  def creole_customimgs
+    @@chunks_hash[:img][:open] = ""
+    @@chunks_hash[:img][:close] = ""
+    @@chunks_hash[:img].delete(:contains)
+    @@chunks_hash[:img][:filter] = Proc.new {|s| 
+      if @img_function
+        s = @img_function.call(s)
+      end
+      s
+    }
+  end
+  
+  def self.creole_tag(*args)
+    
+    # I bet a good Ruby hacker would know a way around this little chunk...
+    tag = args.length > 0 ? args[0] : nil
+    type = args.length > 1 ? args[1] : nil
+    text = args.length > 2 ? args[2] : nil
+    
+    if tag.nil? || tag == "suppress_puts"
+      tags = ""
+      for key in @@chunks_hash.keys.collect{|x| x.to_s}.sort
+        key = key.to_sym
+        o = @@chunks_hash[key][:open]
+        c = @@chunks_hash[key][:close]
+        next if o.nil? || !o.index(/</m)
+        o = o.gsub(/\n/m,"\\n")
+        c = c.gsub(/\n/m,"\\n") if c
+        c = "" if c.nil?
+        this_tag = "#{key}: open(#{o}) close(#{c})\n"
+        puts this_tag if tag.to_s != "suppress_puts" 
+        tags += this_tag
+      end
+      return tags
+    else
+      return if ! type
+      type = type.to_sym
+      return if type != :open && type != :close
+      return if !@@chunks_hash.has_key?(tag)
+      @@chunks_hash[tag][type] = text ? text : ""
+    end
   end
 
 end

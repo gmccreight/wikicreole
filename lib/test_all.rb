@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'test/unit'
-require 'creole'
+require 'Creole'
 
 class TC_Creole < Test::Unit::TestCase
   
@@ -78,6 +78,77 @@ class TC_Creole < Test::Unit::TestCase
     assert_equal "<p><em>Hello</em> <strong>Hello</strong></p>\n\n<p>" +
       "<em>Hello</em> <strong>Hello</strong></p>\n\n", s
   end
+  
+  #-----------------------------------------------------------------------------
+  # Test the links
+  
+  def test_link_with_text
+    markup = "This is a paragraph with a [[ link | some link ]].\nCheck it out."
+    goodhtml = %Q{<p>This is a paragraph with a <a href="link">some link</a>.\nCheck it out.</p>\n\n}
+    
+    assert_equal goodhtml, Creole.creole_parse(markup)
+    
+  end
+  
+  def test_link_with_no_text
+    markup = "This is a paragraph with a [[ link ]].\nCheck it out."
+    goodhtml = %Q{<p>This is a paragraph with a <a href="link">link</a>.\nCheck it out.</p>\n\n}
+    
+    assert_equal goodhtml, Creole.creole_parse(markup)
+    
+  end
+  
+  def test_user_supplied_creole_link_function
+    
+    uppercase = Proc.new {|s| 
+      s.upcase!
+      s
+    }
+    Creole.creole_link(uppercase)
+    
+    markup = "This is a paragraph with an uppercased [[ link ]].\nCheck it out."
+    goodhtml = %Q{<p>This is a paragraph with an uppercased <a href="LINK">link</a>.\nCheck it out.</p>\n\n}
+    
+    assert_equal goodhtml, Creole.creole_parse(markup)
+    
+    # set the link function back to being nil so that the rest of the tests
+    # are not affected by the custom link function
+    Creole.creole_link(nil)
+
+  end
+  
+  def test_puts_existing_creole_tags
+    tags = Creole.creole_tag("suppress_puts")
+    assert tags.index(/u: open\(<u>\) close\(<\/u>\)/)
+  end
+  
+  def test_custom_creole_tag
+    Creole.creole_tag(:p, :open, "<p class=special>")
+
+    markup = "This is a paragraph."
+    goodhtml = "<p class=special>This is a paragraph.</p>\n\n"
+
+    assert_equal goodhtml, Creole.creole_parse(markup)
+    Creole.creole_tag(:p, :open, "<p>")
+  end
+  
+  def test_user_supplied_plugin_function
+    uppercase = Proc.new {|s| 
+      s.upcase!
+      s
+    }
+    Creole.creole_plugin(uppercase)
+    
+    markup = "This is a paragraph with an uppercasing << plugin >>.\nCheck it out."
+    goodhtml = %Q{<p>This is a paragraph with an uppercasing  PLUGIN .\nCheck it out.</p>\n\n}
+    
+    assert_equal goodhtml, Creole.creole_parse(markup)
+    
+    # set the link function back to being nil so that the rest of the tests
+    # are not affected by the custom link function
+    Creole.creole_plugin(nil)
+  end
+
   
   #-----------------------------------------------------------------------------
   # Below here are all the file based tests.  They read the .markup file,
