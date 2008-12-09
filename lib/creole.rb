@@ -579,6 +579,11 @@ class Creole
       if sub_chunk # we've determined what type of sub_chunk this is
         
         if sub_chunk == :dd
+          # Yuck... I don't exactly understand why I need this section, but
+          # without it the parser will go into an infinite loop on the :dd's in
+          # the test suite.  Please, if you're a most excellent Ruby hacker,
+          # find the issue, clean this up, and remove the comment here, m'kay?
+          
           while tref.index(Regexp.compile('\G.*' + @@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
             end_of_match = Regexp.last_match.end(0)
             if end_of_match == pos
@@ -592,14 +597,14 @@ class Creole
             pos = tref.length
           end
         else
+          # This is a little slower than it could be.  The delim should be
+          # pre-compiled, but see the issue in the comment above.
           if tref.index(Regexp.compile(@@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
             pos = Regexp.last_match.end(0)
           else 
             pos = tref.length
           end
         end
-        
-        #puts "--->#{sub_chunk.to_s}:#{last_pos}:#{pos}:#{tref}<---"
 
         html += @@chunks_hash[sub_chunk][:open]
 
@@ -608,8 +613,6 @@ class Creole
         if @@chunks_hash[sub_chunk].has_key?(:filter)   # filter it, if applicable
           t = @@chunks_hash[sub_chunk][:filter].call(t)
         end
-        
-        #puts t if sub_chunk == :link
         
         last_pos = pos  # remember where this chunk ends (where next begins)
         
@@ -762,7 +765,6 @@ class Creole
       s
     }
   end
-
 
   def creole_custombarelinks
     @@chunks_hash[:ilink][:open] = ""

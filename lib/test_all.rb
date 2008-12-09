@@ -6,11 +6,7 @@ require 'Creole'
 class TC_Creole < Test::Unit::TestCase
   
   #-----------------------------------------------------------------------------
-  # This first section tests the assumptions of our methods.  It may not matter
-  # as much as the file-based section below for the final performance of the
-  # parser, however, if you're making changes to the code, you'll likely
-  # appreciate the lower level sanity tests provided up here.  Check below for
-  # the comprehensive tests.
+  # This first section is the low level method sanity tests.
 
   def test_strip_leading_and_trailing_eq_and_whitespace
     assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace("==head")
