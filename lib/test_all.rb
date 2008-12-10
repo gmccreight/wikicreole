@@ -75,6 +75,16 @@ class TC_Creole < Test::Unit::TestCase
       "<em>Hello</em> <strong>Hello</strong></p>\n\n", s
   end
   
+#  def test_link_with_a_trailing_slash
+#    s = Creole.creole_parse("the site http://www.yahoo.com/ is a site")
+#    assert_equal %Q{<p>the site <a href="http://www.yahoo.com/">http://www.yahoo.com/</a> is a site</p>\n\n}, s
+#  end
+#  
+#  def test_escaped_url
+#    s = Creole.creole_parse("the site ~http://www.yahoo.com/ is a site")
+#    assert_equal %Q{<p>the site http://www.yahoo.com/ is a site</p>\n\n}, s
+#  end
+  
   #-----------------------------------------------------------------------------
   # Test the links
   
@@ -169,12 +179,26 @@ class TC_Creole < Test::Unit::TestCase
     run_testfile("specialchars")
   end
   
+  def test_jsp_wiki
+    # This test was found on the Creole website.  I had to hand-tweak it a bit
+    # for it to make sense for our paticular settings, however, the fundamentals
+    # are the same as they were in the original test.
+    run_testfile("jsp_wiki")    
+  end
+  
   def run_testfile(name)
     name = "test_" + name
     markup = File.read("./#{name}.markup")
     html = File.read("./#{name}.html")
     parsed = Creole.creole_parse(markup)
+    #write_file("./#{name}.processed", parsed) if name.index(/jsp/)
     assert_equal html, parsed
   end
   
+  def write_file(filename, data)
+    f = File.new(filename, "w")
+    f.write(data)
+    f.close
+  end
+
 end
