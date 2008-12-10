@@ -1,8 +1,25 @@
-class Creole
+# Creole implements the Wiki Creole markup language, 
+# version 1.0, as described at http://www.wikicreole.org.  It
+# reads Creole 1.0 markup and returns XHTML.
+#
+# Author::    Gordon McCreight  (mailto:creole.to.gordon@mccreight.com)
+# Copyright:: Copyright (c) 2008 Gordon McCreight
+# License::   Distributes under the same terms as Ruby
+#
+# Most of this code is ported from Jason Burnett's excellent Perl-based
+# converter which can be found here:
+# http://search.cpan.org/~jburnett/Text-WikiCreole/
 
-  # Most of this code is ported from Jason Burnett's excellent Perl-based
-  # converter which can be found here:
-  # http://search.cpan.org/~jburnett/Text-WikiCreole/
+class Creole
+  
+  # The function which parses the markup and returns HTML.
+  def self.creole_parse(s)
+    return "" if s.class.to_s != "String"
+    return "" if s.length < 1
+
+    init
+    return parse(s, :top)
+  end
 
   def self.strip_leading_and_trailing_eq_and_whitespace(s)
     s.sub!(/^\s*=*\s*/, '')
@@ -726,16 +743,22 @@ class Creole
     
   end
   
-  def self.creole_parse(s)
-    return "" if s.class.to_s != "String"
-    return "" if s.length < 1
-
-    init
-    return parse(s, :top)
-  end
-  
-  # User supplied custom functions
-  
+  # Creole 1.0 supports two plugin syntaxes: << plugin content >> and
+  #                                         <<< plugin content >>>
+  # 
+  # Write a function that receives the text between the <<>> 
+  # delimiters (not including the delimiters) and 
+  # returns the text to be displayed.  For example, here is a 
+  # simple plugin that converts plugin text to uppercase:
+  #
+  # uppercase = Proc.new {|s| 
+  #   s.upcase!
+  #   s
+  # }
+  # Creole.creole_plugin(uppercase)
+  #
+  # If you do not register a plugin function, plugin markup will be left
+  # as is, including the surrounding << >>.
   def self.creole_plugin(func)
     @plugin_function = func
   end
@@ -752,7 +775,7 @@ class Creole
     @img_function = func
   end
   
-  def creole_customlinks
+  def self.creole_customlinks
     @@chunks_hash[:href][:open] = ""
     @@chunks_hash[:href][:close] = ""
     @@chunks_hash[:link][:open] = ""
@@ -766,7 +789,7 @@ class Creole
     }
   end
 
-  def creole_custombarelinks
+  def self.creole_custombarelinks
     @@chunks_hash[:ilink][:open] = ""
     @@chunks_hash[:ilink][:close] = ""
     @@chunks_hash[:ilink][:filter] = Proc.new {|s| 
@@ -777,7 +800,7 @@ class Creole
     }
   end
 
-  def creole_customimgs
+  def self.creole_customimgs
     @@chunks_hash[:img][:open] = ""
     @@chunks_hash[:img][:close] = ""
     @@chunks_hash[:img].delete(:contains)
