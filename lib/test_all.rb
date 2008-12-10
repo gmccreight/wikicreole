@@ -145,7 +145,6 @@ class TC_Creole < Test::Unit::TestCase
     Creole.creole_plugin(nil)
   end
 
-  
   #-----------------------------------------------------------------------------
   # Below here are all the file based tests.  They read the .markup file,
   # parse it, then validate that it matches the pre-existing .html file.

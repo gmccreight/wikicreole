@@ -195,7 +195,7 @@ class Creole
     :nowiki => {
       :curpat => '(?=\{\{\{ *\n)',
       :fwpat => '\n(?=\{\{\{ *\n)',
-      :stops => "\n\}\}\} *#{@@eol}",
+      :stops => "\n\\}\\}\\} *#{@@eol}",
       :hint => ['{'],
       :filter => Proc.new {|s|
         s[0,3] = ''
