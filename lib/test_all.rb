@@ -75,15 +75,26 @@ class TC_Creole < Test::Unit::TestCase
       "<em>Hello</em> <strong>Hello</strong></p>\n\n", s
   end
   
-#  def test_link_with_a_trailing_slash
-#    s = Creole.creole_parse("the site http://www.yahoo.com/ is a site")
-#    assert_equal %Q{<p>the site <a href="http://www.yahoo.com/">http://www.yahoo.com/</a> is a site</p>\n\n}, s
-#  end
-#  
-#  def test_escaped_url
-#    s = Creole.creole_parse("the site ~http://www.yahoo.com/ is a site")
-#    assert_equal %Q{<p>the site http://www.yahoo.com/ is a site</p>\n\n}, s
-#  end
+  def test_link_with_a_page_name
+    s = Creole.creole_parse("the site http://www.yahoo.com/page.html is a site")
+    assert_equal %Q{<p>the site <a href="http://www.yahoo.com/page.html">http://www.yahoo.com/page.html</a> is a site</p>\n\n}, s
+  end
+  
+  def test_link_with_a_trailing_slash
+    # This test caught a bug in the initial parser, so I changed the ilink
+    # :stops regex so it worked.
+    s = Creole.creole_parse("the site http://www.yahoo.com/ is a site")
+    assert_equal %Q{<p>the site <a href="http://www.yahoo.com/">http://www.yahoo.com/</a> is a site</p>\n\n}, s
+  end
+  
+  def test_escaped_url
+    # This behavior is wrong.  If you move the tilda to the
+    # beginning of the http, where it makes more sense, it breaks.  Without
+    # negative lookback assertions it may be the best we can do without
+    # significanly hampering performance.
+    s = Creole.creole_parse("the site http:~//www.yahoo.com/ is a site")
+    assert_equal %Q{<p>the site http://www.yahoo.com/ is a site</p>\n\n}, s
+  end
   
   #-----------------------------------------------------------------------------
   # Test the links

@@ -375,7 +375,11 @@ class Creole
     },
     :ilink => {
       :curpat => '(?=(?:https?|ftp):\/\/)',
-      :stops => '(?=[[:punct:]]?(?:\s|$))',
+      # This following is the [:punct:] character class with the / and ? removed
+      # so that URLs like http://www.somesite.com/ will match the trailing
+      # slash.  URLs with a trailing ? will also work.  Trailing ? is sometimes
+      # used to ensure that browsers don't cache the page.
+      :stops => '(?=[!"#$%&\'()*+,-.:;<=>@\[\\]^_`{|}~]?(?:\s|$))',
       :hint => ['h', 'f'],
       :filter => Proc.new {|s|
         s.sub!(/^\s*/, '')
@@ -475,9 +479,15 @@ class Creole
       :open => "<strong>", :close => "</strong>",
     },
     :em => {
+      # This could use a negative lookback assertion to let you know whether
+      # it's part of a URL or not.  That would be helpful if the URL had been
+      # escaped.  Currently, it will just become italic after the // since 
+      # it didn't process the URL.
       :curpat => '(?=\/\/)',
-      # gemhack 4 removed a negative lookback assertion (?<!:)
-      # and replaced it with [^:]  Not sure of the consequences.
+      # Removed a negative lookback assertion (?<!:) from the Perl version
+      # and replaced it with [^:]  Not sure of the consequences, however, as
+      # of this version, Ruby does not have negative lookback assertions, so
+      # I had to do it.
       :stops => '\/\/.*?[^:]\/\/',
       :hint => ['/'],
       :contains => @@all_inline,
