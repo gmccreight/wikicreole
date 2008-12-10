@@ -53,10 +53,9 @@ class Creole
   @@eol = '(?:\n|$)'; # end of line (or string)
   
   @plugin_function = nil
-  @barelink_funtion = nil
+  @barelink_function = nil
   @link_function = nil
   @img_function = nil
-  
   
   @is_initialized = false
 

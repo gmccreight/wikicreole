@@ -199,10 +199,10 @@ class TC_Creole < Test::Unit::TestCase
   
   def run_testfile(name)
     name = "test_" + name
-    markup = File.read("./#{name}.markup")
-    html = File.read("./#{name}.html")
+    markup = File.read("./test/#{name}.markup")
+    html = File.read("./test/#{name}.html")
     parsed = Creole.creole_parse(markup)
-    #write_file("./#{name}.processed", parsed) if name.index(/jsp/)
+    #write_file("./test/#{name}.processed", parsed) if name.index(/jsp/)
     assert_equal html, parsed
   end
   
