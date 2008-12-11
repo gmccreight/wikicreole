@@ -10,7 +10,7 @@
 # converter which can be found here:
 # http://search.cpan.org/~jburnett/Text-WikiCreole/
 
-class Creole
+class WikiCreole
   
   # The function which parses the markup and returns HTML.
   def self.creole_parse(s)

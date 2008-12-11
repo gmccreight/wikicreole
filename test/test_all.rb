@@ -1,89 +1,91 @@
 #!/usr/bin/env ruby
 
 require 'test/unit'
-require 'Creole'
+require 'wiki_creole'
 
-class TC_Creole < Test::Unit::TestCase
+class TC_WikiCreole < Test::Unit::TestCase
+
+  $strict = false
   
   #-----------------------------------------------------------------------------
   # This first section is the low level method sanity tests.
 
   def test_strip_leading_and_trailing_eq_and_whitespace
-    assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace("==head")
-    assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace(" == head")
-    assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace("head ==")
-    assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace("head == ")
-    assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace("head  ")
-    assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace("  head")
-    assert_equal "head", Creole.strip_leading_and_trailing_eq_and_whitespace("  head  ")
+    assert_equal "head", WikiCreole.strip_leading_and_trailing_eq_and_whitespace("==head")
+    assert_equal "head", WikiCreole.strip_leading_and_trailing_eq_and_whitespace(" == head")
+    assert_equal "head", WikiCreole.strip_leading_and_trailing_eq_and_whitespace("head ==")
+    assert_equal "head", WikiCreole.strip_leading_and_trailing_eq_and_whitespace("head == ")
+    assert_equal "head", WikiCreole.strip_leading_and_trailing_eq_and_whitespace("head  ")
+    assert_equal "head", WikiCreole.strip_leading_and_trailing_eq_and_whitespace("  head")
+    assert_equal "head", WikiCreole.strip_leading_and_trailing_eq_and_whitespace("  head  ")
   end
   
   def test_strip_list
-    assert_equal "`head", Creole.strip_list(" *head")
-    assert_equal "\n`head", Creole.strip_list("\n *head")
-    assert_equal "`**head", Creole.strip_list("***head")
+    assert_equal "`head", WikiCreole.strip_list(" *head")
+    assert_equal "\n`head", WikiCreole.strip_list("\n *head")
+    assert_equal "`**head", WikiCreole.strip_list("***head")
   end
   
   def test_chunk_filter_lambdas
-    assert_equal "a string with a  in it", Creole.filter_string_x_with_chunk_filter_y("a string with a : in it", :ip)
-    assert_equal "a string with a newline", Creole.filter_string_x_with_chunk_filter_y("a string with a newline\n", :p)
-    assert_equal "a string with a newline", Creole.filter_string_x_with_chunk_filter_y("a string with a newline\n", :dd)
-    assert_equal "", Creole.filter_string_x_with_chunk_filter_y("a non-blank string", :blank)
+    assert_equal "a string with a  in it", WikiCreole.filter_string_x_with_chunk_filter_y("a string with a : in it", :ip)
+    assert_equal "a string with a newline", WikiCreole.filter_string_x_with_chunk_filter_y("a string with a newline\n", :p)
+    assert_equal "a string with a newline", WikiCreole.filter_string_x_with_chunk_filter_y("a string with a newline\n", :dd)
+    assert_equal "", WikiCreole.filter_string_x_with_chunk_filter_y("a non-blank string", :blank)
     
     #special... uses strip_list function inside the lamda function
-    assert_equal "`head", Creole.filter_string_x_with_chunk_filter_y(" *head", :ul)
-    assert_equal "head", Creole.filter_string_x_with_chunk_filter_y("head == ", :h5)
+    assert_equal "`head", WikiCreole.filter_string_x_with_chunk_filter_y(" *head", :ul)
+    assert_equal "head", WikiCreole.filter_string_x_with_chunk_filter_y("head == ", :h5)
   end
   
   def test_init
-    Creole.init
+    WikiCreole.init
     assert_equal 1, 1
   end
   
   def test_sub_chunk_for
-    Creole.init
+    WikiCreole.init
     str = "//Hello// **Hello**"
-    assert_equal :p, Creole.get_sub_chunk_for(str, :top, 0)
-    assert_equal :em, Creole.get_sub_chunk_for(str, :p, 0)
-    assert_equal :plain, Creole.get_sub_chunk_for(str, :p, 9)
-    assert_equal :strong, Creole.get_sub_chunk_for(str, :p, 10)
+    assert_equal :p, WikiCreole.get_sub_chunk_for(str, :top, 0)
+    assert_equal :em, WikiCreole.get_sub_chunk_for(str, :p, 0)
+    assert_equal :plain, WikiCreole.get_sub_chunk_for(str, :p, 9)
+    assert_equal :strong, WikiCreole.get_sub_chunk_for(str, :p, 10)
   end
   
   def test_strong
-    s = Creole.creole_parse("**Hello**")
+    s = WikiCreole.creole_parse("**Hello**")
     assert_equal "<p><strong>Hello</strong></p>\n\n", s
   end
   
   def test_italic
-    s = Creole.creole_parse("//Hello//")
+    s = WikiCreole.creole_parse("//Hello//")
     assert_equal "<p><em>Hello</em></p>\n\n", s
   end
   
   def test_italic_bold_with_no_spaces
-    s = Creole.creole_parse("//Hello//**Hello**")
+    s = WikiCreole.creole_parse("//Hello//**Hello**")
     assert_equal "<p><em>Hello</em><strong>Hello</strong></p>\n\n", s
   end
   
   def test_italic_bold_with_a_space_in_the_middle
-    s = Creole.creole_parse("//Hello// **Hello**")
+    s = WikiCreole.creole_parse("//Hello// **Hello**")
     assert_equal "<p><em>Hello</em> <strong>Hello</strong></p>\n\n", s
   end
   
   def test_two_paragraph_italic_bold_with_a_space_in_the_middle
-    s = Creole.creole_parse("//Hello// **Hello**\n\n//Hello// **Hello**")
+    s = WikiCreole.creole_parse("//Hello// **Hello**\n\n//Hello// **Hello**")
     assert_equal "<p><em>Hello</em> <strong>Hello</strong></p>\n\n<p>" +
       "<em>Hello</em> <strong>Hello</strong></p>\n\n", s
   end
   
   def test_link_with_a_page_name
-    s = Creole.creole_parse("the site http://www.yahoo.com/page.html is a site")
+    s = WikiCreole.creole_parse("the site http://www.yahoo.com/page.html is a site")
     assert_equal %Q{<p>the site <a href="http://www.yahoo.com/page.html">http://www.yahoo.com/page.html</a> is a site</p>\n\n}, s
   end
   
   def test_link_with_a_trailing_slash
     # This test caught a bug in the initial parser, so I changed the ilink
     # :stops regex so it worked.
-    s = Creole.creole_parse("the site http://www.yahoo.com/ is a site")
+    s = WikiCreole.creole_parse("the site http://www.yahoo.com/ is a site")
     assert_equal %Q{<p>the site <a href="http://www.yahoo.com/">http://www.yahoo.com/</a> is a site</p>\n\n}, s
   end
   
@@ -92,7 +94,7 @@ class TC_Creole < Test::Unit::TestCase
     # beginning of the http, where it makes more sense, it breaks.  Without
     # negative lookback assertions it may be the best we can do without
     # significanly hampering performance.
-    s = Creole.creole_parse("the site http:~//www.yahoo.com/ is a site")
+    s = WikiCreole.creole_parse("the site http:~//www.yahoo.com/ is a site")
     assert_equal %Q{<p>the site http://www.yahoo.com/ is a site</p>\n\n}, s
   end
   
@@ -103,7 +105,7 @@ class TC_Creole < Test::Unit::TestCase
     markup = "This is a paragraph with a [[ link | some link ]].\nCheck it out."
     goodhtml = %Q{<p>This is a paragraph with a <a href="link">some link</a>.\nCheck it out.</p>\n\n}
     
-    assert_equal goodhtml, Creole.creole_parse(markup)
+    assert_equal goodhtml, WikiCreole.creole_parse(markup)
     
   end
   
@@ -111,7 +113,7 @@ class TC_Creole < Test::Unit::TestCase
     markup = "This is a paragraph with a [[ link ]].\nCheck it out."
     goodhtml = %Q{<p>This is a paragraph with a <a href="link">link</a>.\nCheck it out.</p>\n\n}
     
-    assert_equal goodhtml, Creole.creole_parse(markup)
+    assert_equal goodhtml, WikiCreole.creole_parse(markup)
     
   end
   
@@ -121,32 +123,32 @@ class TC_Creole < Test::Unit::TestCase
       s.upcase!
       s
     }
-    Creole.creole_link(uppercase)
+    WikiCreole.creole_link(uppercase)
     
     markup = "This is a paragraph with an uppercased [[ link ]].\nCheck it out."
     goodhtml = %Q{<p>This is a paragraph with an uppercased <a href="LINK">link</a>.\nCheck it out.</p>\n\n}
     
-    assert_equal goodhtml, Creole.creole_parse(markup)
+    assert_equal goodhtml, WikiCreole.creole_parse(markup)
     
     # set the link function back to being nil so that the rest of the tests
     # are not affected by the custom link function
-    Creole.creole_link(nil)
+    WikiCreole.creole_link(nil)
 
   end
   
   def test_puts_existing_creole_tags
-    tags = Creole.creole_tag("suppress_puts")
+    tags = WikiCreole.creole_tag("suppress_puts")
     assert tags.index(/u: open\(<u>\) close\(<\/u>\)/)
   end
   
   def test_custom_creole_tag
-    Creole.creole_tag(:p, :open, "<p class=special>")
+    WikiCreole.creole_tag(:p, :open, "<p class=special>")
 
     markup = "This is a paragraph."
     goodhtml = "<p class=special>This is a paragraph.</p>\n\n"
 
-    assert_equal goodhtml, Creole.creole_parse(markup)
-    Creole.creole_tag(:p, :open, "<p>")
+    assert_equal goodhtml, WikiCreole.creole_parse(markup)
+    WikiCreole.creole_tag(:p, :open, "<p>")
   end
   
   def test_user_supplied_plugin_function
@@ -154,16 +156,16 @@ class TC_Creole < Test::Unit::TestCase
       s.upcase!
       s
     }
-    Creole.creole_plugin(uppercase)
+    WikiCreole.creole_plugin(uppercase)
     
     markup = "This is a paragraph with an uppercasing << plugin >>.\nCheck it out."
     goodhtml = %Q{<p>This is a paragraph with an uppercasing  PLUGIN .\nCheck it out.</p>\n\n}
     
-    assert_equal goodhtml, Creole.creole_parse(markup)
+    assert_equal goodhtml, WikiCreole.creole_parse(markup)
     
     # set the link function back to being nil so that the rest of the tests
     # are not affected by the custom link function
-    Creole.creole_plugin(nil)
+    WikiCreole.creole_plugin(nil)
   end
 
   #-----------------------------------------------------------------------------
@@ -201,7 +203,7 @@ class TC_Creole < Test::Unit::TestCase
     name = "test_" + name
     markup = File.read("./test/#{name}.markup")
     html = File.read("./test/#{name}.html")
-    parsed = Creole.creole_parse(markup)
+    parsed = WikiCreole.creole_parse(markup)
     #write_file("./test/#{name}.processed", parsed) if name.index(/jsp/)
     assert_equal html, parsed
   end
@@ -337,56 +339,59 @@ class TC_Creole < Test::Unit::TestCase
     tc "<p>This <em>is\nitalic</em></p>\n\n", "This //is\nitalic//"
   end
 
-  # def test_larsch_bold_italics
-    # # Creole1.0: By example
-    # tc "<p><strong><em>bold italics</em></strong></p>", "**//bold italics//**"
+  def test_larsch_bold_italics
+    # Creole1.0: By example
+    tc "<p><strong><em>bold italics</em></strong></p>\n\n", "**//bold italics//**"
 
-    # # Creole1.0: By example
-    # tc "<p><em><strong>bold italics</strong></em></p>", "//**bold italics**//"
+    # Creole1.0: By example
+    tc "<p><em><strong>bold italics</strong></em></p>\n\n", "//**bold italics**//"
 
-    # # Creole1.0: By example
-    # tc "<p><em>This is <strong>also</strong> good.</em></p>", "//This is **also** good.//"
-  # end
+    # Creole1.0: By example
+    tc "<p><em>This is <strong>also</strong> good.</em></p>\n\n", "//This is **also** good.//"
+  end
   
-  # def test_larsch_headings
-    # # Creole1.0: Only three differed sized levels of heading are required.
-    # tc "<h1>Heading 1</h1>", "= Heading 1 ="
-    # tc "<h2>Heading 2</h2>", "== Heading 2 =="
-    # tc "<h3>Heading 3</h3>", "=== Heading 3 ==="
-    # unless $strict
-      # tc "<h4>Heading 4</h4>", "==== Heading 4 ===="
-      # tc "<h5>Heading 5</h5>", "===== Heading 5 ====="
-      # tc "<h6>Heading 6</h6>", "====== Heading 6 ======"
-    # end
+  def test_larsch_headings
+    # Creole1.0: Only three differed sized levels of heading are required.
+    tc "<h1>Heading 1</h1>\n\n", "= Heading 1 ="
+    tc "<h2>Heading 2</h2>\n\n", "== Heading 2 =="
+    tc "<h3>Heading 3</h3>\n\n", "=== Heading 3 ==="
+    unless $strict
+      tc "<h4>Heading 4</h4>\n\n", "==== Heading 4 ===="
+      tc "<h5>Heading 5</h5>\n\n", "===== Heading 5 ====="
+      tc "<h6>Heading 6</h6>\n\n", "====== Heading 6 ======"
+    end
 
-    # # Creole1.0: Closing (right-side) equal signs are optional
-    # tc "<h1>Heading 1</h1>", "=Heading 1"
-    # tc "<h2>Heading 2</h2>", "== Heading 2"
-    # tc "<h3>Heading 3</h3>", " === Heading 3"
+    # Creole1.0: Closing (right-side) equal signs are optional
+    tc "<h1>Heading 1</h1>\n\n", "=Heading 1"
+    tc "<h2>Heading 2</h2>\n\n", "== Heading 2"
+    tc "<h3>Heading 3</h3>\n\n", " === Heading 3"
 
-    # # Creole1.0: Closing (right-side) equal signs don't need to be balanced and don't impact the kind of heading generated
-    # tc "<h1>Heading 1</h1>", "=Heading 1 ==="
-    # tc "<h2>Heading 2</h2>", "== Heading 2 ="
-    # tc "<h3>Heading 3</h3>", " === Heading 3 ==========="
+    # Creole1.0: Closing (right-side) equal signs don't need to be balanced and don't impact the kind of heading generated
+    tc "<h1>Heading 1</h1>\n\n", "=Heading 1 ==="
+    tc "<h2>Heading 2</h2>\n\n", "== Heading 2 ="
+    tc "<h3>Heading 3</h3>\n\n", " === Heading 3 ==========="
     
-    # # Creole1.0: Whitespace is allowed before the left-side equal signs.
-    # tc "<h1>Heading 1</h1>", " \t= Heading 1 ="
-    # tc "<h2>Heading 2</h2>", " \t== Heading 2 =="
+    # Creole1.0: Whitespace is allowed before the left-side equal signs.
+    # TODO XXX: These don't work in this version of the parser
+    #tc "<h1>Heading 1</h1>\n\n", "\t= Heading 1 ="
+    #tc "<h2>Heading 2</h2>\n\n", " \t == Heading 2 =="
     
-    # # Creole1.0: Only white-space characters are permitted after the closing equal signs.
-    # tc "<h1>Heading 1</h1>", " = Heading 1 =   "
-    # tc "<h2>Heading 2</h2>", " == Heading 2 ==  \t  "
+    # Creole1.0: Only white-space characters are permitted after the closing equal signs.
+    tc "<h1>Heading 1</h1>\n\n", " = Heading 1 =   "
+    tc "<h2>Heading 2</h2>\n\n", " == Heading 2 ==  \t  "
 
-    # # !!Creole1.0 doesn't specify if text after closing equal signs
-    # # !!becomes part of the heading or invalidates the entire heading.
-    # # tc "<p> == Heading 2 == foo</p>", " == Heading 2 == foo"
-    # unless $strict
-      # tc "<h2>Heading 2 == foo</h2>", " == Heading 2 == foo"
-    # end
+    # !!Creole1.0 doesn't specify if text after closing equal signs
+    # !!becomes part of the heading or invalidates the entire heading.
+    # tc "<p> == Heading 2 == foo</p>\n\n", " == Heading 2 == foo"
+    unless $strict
+      tc "<h2>Heading 2 == foo</h2>\n\n", " == Heading 2 == foo"
+    end
     
-    # # Creole1.0-Implied: Line must start with equal sign
-    # tc "<p>foo = Heading 1 =</p>", "foo = Heading 1 ="
-  # end
+    # Creole1.0-Implied: Line must start with equal sign
+    tc "<p>foo = Heading 1 =</p>\n\n", "foo = Heading 1 ="
+  end
+  
+  # left off adding Lars' tests here... will do more as time allows.
   
   # def test_larsch_links
     # # Creole1.0: Links
@@ -876,7 +881,7 @@ class TC_Creole < Test::Unit::TestCase
   # end
   
   def tc(html, creole)
-    output = Creole.creole_parse(creole)
+    output = WikiCreole.creole_parse(creole)
     
     #if it's one of the specially formatted blocks of html, then strip it
     if html.index(/\n {4}$/m)
