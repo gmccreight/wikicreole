@@ -9,3 +9,8 @@ Rake::TestTask.new(:test_all) do |t|
   t.warning = true
   t.test_files = FileList['test/test_all.rb']
 end
+
+desc "Create Gem"
+task :create_gem do
+  `gem build creole.gemspec`
+end
