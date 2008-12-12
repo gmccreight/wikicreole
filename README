@@ -1,3 +1,13 @@
 == WikiCreole
+  WikiCreole is a Creole-to-XHTML converter written in pure Ruby.  It supports
+  Creole 1.0 as well as extensions.  Check out the rdoc documentation by issuing
+  the following command:
+    ri WikiCreole
 
-WikiCreole is a Creole-to-XHTML converter written in pure Ruby.
+== Synopsis
+  require 'wiki_creole'
+  xhtml = WikiCreole.creole_parse(creole_markup_string)
+
+== Contribute
+  http://github.com/gmccreight/wikicreole/tree/master
+  or send an email to creole.to.gordon@mccreight.com
