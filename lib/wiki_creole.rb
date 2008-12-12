@@ -1,18 +1,119 @@
-# Creole implements the Wiki Creole markup language, 
+# WikiCreole implements the Wiki Creole markup language, 
 # version 1.0, as described at http://www.wikicreole.org.  It
 # reads Creole 1.0 markup and returns XHTML.
 #
-# Author::    Gordon McCreight  (mailto:creole.to.gordon@mccreight.com)
+# Author::    Gordon McCreight  (mailto:wikicreole.to.gordon@mccreight.com)
 # Copyright:: Copyright (c) 2008 Gordon McCreight
-# License::   Distributes under the same terms as Ruby
+# License::   Distributes under the same terms as Ruby (see the LICENCE file)
 #
+# == Synopsis
+# Most likely you'll just want to do:
+#  require 'wiki_creole'
+#  xhtml = WikiCreole.creole_parse(wiki_creole_markup)
+# If you want to override the default behaviors, make sure to look at the other
+# public methods.
+#
+# == Official Markup
+#
+#  Here is a summary of the official Creole 1.0 markup 
+#  elements.  See http://www.wikicreole.org for the full
+#  details.
+#
+#  Headings:
+#  = heading 1       ->    <h1>heading 1</h1>
+#  == heading 2      ->    <h2>heading 2</h2>
+#  ...
+#  ====== heading 6  ->    <h6>heading 6</h6>
+#
+#  Various inline markup:
+#  ** bold **        ->    <strong> bold </strong>
+#  // italics //     ->    <em> italics </em>
+#  **// both //**    ->    <strong><em> both </em></strong>
+#  [[ link ]]        ->    <a href="link">link</a>
+#  [[ link | text ]] ->    <a href="link">text</a>
+#  http://cpan.org   ->    <a href="http://cpan.org">http://cpan.org</a>
+#  line \\ break     ->    line <br /> break
+#  {{img.jpg|alt}}   ->    <img src="img.jpg" alt="alt">
+#
+#  Lists:
+#  * unordered list        <ul><li>unordered list</li>
+#  * second item               <li>second item</li>
+#  ## nested ordered  ->       <ol><li>nested ordered</li>
+#  *** uber-nested                 <ul><li>uber-nested</li></ul>
+#  * back to level 1           </ol><li>back to level 1</li></ul>
+#
+#  Tables:
+#  |= h1 |= h2       ->    <table><tr><th>h1</th><th>h2</th></tr>
+#  |  c1 |  c2             <tr><td>c1</td><td>c2</td></tr></table>
+#
+#  Nowiki (Preformatted):
+#  {{{                     <pre>
+#    ** not bold **          ** not bold **
+#    escaped HTML:   ->      escaped HTML:
+#    <i> test </i>           &lt;i&gt; test &lt;/i&gt;
+#  }}}                     <pre>
+#
+#  {{{ inline\\also }}} -> <tt>inline\\also</tt>
+#
+#  Escape Character:
+#  ~** not bold **    ->    ** not bold **
+#  tilde: ~~          ->    tilde: ~
+#
+#  Paragraphs are separated by other blocks and blank lines.  
+#  Inline markup can usually be combined, overlapped, etc.  List
+#  items and plugin text can span lines.
+#
+# == Extended Markup
+#
+#  In addition to OFFICIAL MARKUP, Text::WikiCreole also supports
+#  the following markup:
+#
+#  Plugins:
+#  << plugin >>        ->    whatever you want (see WikiCreole.creole_plugin)
+#  <<< plugin >>>      ->    whatever you want (see WikiCreole.creole_plugin)
+#      Triple-bracket syntax has priority, in order to allow you to embed
+#      double-brackets in plugins, such as to embed Perl code.
+#
+#  Inline:
+#  ## monospace ##     ->    <tt> monospace </tt>
+#  ^^ superscript ^^   ->    <sup> superscript </sup>
+#  ,, subscript ,,     ->    <sub> subscript </sub>
+#  __ underline __     ->    <u> underline </u>
+#  (TM)                ->    &trade;
+#  (R)                 ->    &reg;
+#  (C)                 ->    &copy;
+#  ...                 ->    &hellip;
+#  --                  ->    &ndash;
+#
+#  Indented Paragraphs:
+#  :this               ->    <div style="margin-left:2em"><p>this
+#  is indented               is indented</p>
+#  :: more indented          <div style="margin-left:2em"><p> more
+#                            indented</div></div>
+#
+#  Definition Lists:
+#  ; Title             ->    <dl><dt>Title</dt>
+#  : item 1 : item 2         <dd>item 1</dd><dd>item 2</dd>
+#  ; Title 2 : item2a        <dt>Title 2</dt><dd>item 2a</dd></dl>
+#
+# == Acknowledgements
 # Most of this code is ported from Jason Burnett's excellent Perl-based
 # converter which can be found here:
 # http://search.cpan.org/~jburnett/Text-WikiCreole/
+# He, in turn, acknowledges the Document::Parser perl module.
+# 
+# Also, some of the tests are taken from Lars Christensen's implementation of
+# the Creole parser.  You can find his code at:
+# http://github.com/larsch/creole/tree/master
+#
+# Other test come from the wikicreole website itself, here:
+# http://www.wikicreole.org/
 
 class WikiCreole
   
-  # The function which parses the markup and returns HTML.
+  # Reads Creole 1.0 markup and return XHTML.
+  #
+  # xhtml = WikiCreole.creole_parse(wiki_creole_markup)
   def self.creole_parse(s)
     return "" if s.class.to_s != "String"
     return "" if s.length < 1
@@ -20,19 +121,172 @@ class WikiCreole
     init
     return parse(s, :top)
   end
+  
+  # Creole 1.0 supports two plugin syntaxes: << plugin content >> and
+  # <<< plugin content >>>
+  # 
+  # Write a function that receives the text between the <<>> 
+  # delimiters (not including the delimiters) and 
+  # returns the text to be displayed.  For example, here is a 
+  # simple plugin that converts plugin text to uppercase:
+  #
+  #  uppercase = Proc.new {|s| 
+  #    s.upcase!
+  #    s
+  #  }
+  #  WikiCreole.creole_plugin(uppercase)
+  #
+  # If you do not register a plugin function, plugin markup will be left
+  # as is, including the surrounding << >>.
+  def self.creole_plugin(func)
+    @plugin_function = func
+  end
 
-  def self.strip_leading_and_trailing_eq_and_whitespace(s)
-    s.sub!(/^\s*=*\s*/, '')
-    s.sub!(/\s*=*\s*$/, '')
-    return s
+  # You may wish to customize [[ links ]], such as to prefix a hostname,
+  # port, etc.
+  #
+  # Write a function, similar to the plugin function, which receives the
+  # URL part of the link (with leading and trailing whitespace stripped) 
+  # and returns the customized link.  For example, to prepend 
+  #  http://my.domain/
+  # to pagename:
+  #
+  #  mylink = Proc.new {|s| 
+  #    s = "http://my.domain/" + s
+  #    s
+  #  }
+  #  WikiCreole.creole_link(mylink)
+  def self.creole_link(func)
+    @link_function = func
   end
-	
-  # strip list markup trickery
-  def self.strip_list(s)
-    s.sub!(/(?:`*| *)[\*\#]/, '`')
-    s.gsub!(/\n(?:`*| *)[\*\#]/m, "\n`")
-    return s
+  
+  # Same purpose as creole_link, but for "bare" link markup.  Bare links are
+  # the links which are in the text but not surrounded by brackets.
+  #
+  #  mybarelink = Proc.new {|s| 
+  #    s = s + ".html"
+  #    s
+  #  }
+  #  WikiCreole.creole_barelink(mybarelink)
+  def self.creole_barelink(func)
+    @barelink_function = func
   end
+
+  # Same purpose as creole_link, but for image URLs.
+  #
+  #  myimg = Proc.new {|s| 
+  #    s = "http://my.domain/" + s
+  #    s
+  #  }
+  #  WikiCreole.creole_img(myimg)
+  def self.creole_img(func)
+    @img_function = func
+  end
+  
+  # If you want complete control over links, rather than just modifying
+  # the URL, register your link markup function with WikiCreole.creole_link()
+  # as above and then call creole_customlinks().  Now your function will receive
+  # the entire link markup chunk, such as <tt>[[ some_wiki_page | page description ]]</tt> 
+  # and must return HTML.
+  #
+  # This has no effect on "bare" link markup, such as
+  #  http://cpan.org
+  def self.creole_customlinks
+    @@chunks_hash[:href][:open] = ""
+    @@chunks_hash[:href][:close] = ""
+    @@chunks_hash[:link][:open] = ""
+    @@chunks_hash[:link][:close] = ""
+    @@chunks_hash[:link].delete(:contains)
+    @@chunks_hash[:link][:filter] = Proc.new {|s| 
+      if @link_function
+        s = @link_function.call(s)
+      end
+      s
+    }
+  end
+
+  # Same purpose as creole_customlinks, but for "bare" link markup.
+  def self.creole_custombarelinks
+    @@chunks_hash[:ilink][:open] = ""
+    @@chunks_hash[:ilink][:close] = ""
+    @@chunks_hash[:ilink][:filter] = Proc.new {|s| 
+      if @barelink_function
+        s = @barelink_function.call(s)
+      end
+      s
+    }
+  end
+
+  # Similar to creole_customlinks, but for images.
+  def self.creole_customimgs
+    @@chunks_hash[:img][:open] = ""
+    @@chunks_hash[:img][:close] = ""
+    @@chunks_hash[:img].delete(:contains)
+    @@chunks_hash[:img][:filter] = Proc.new {|s| 
+      if @img_function
+        s = @img_function.call(s)
+      end
+      s
+    }
+  end
+  
+  # You may wish to customize the opening and/or closing tags
+  # for the various bits of Creole markup.  For example, to
+  # assign a CSS class to list items:
+  #  WikiCreole.creole_tag(:li, :open, "<li class=myclass>")
+  #
+  # Or to see all current tags:
+  #  puts WikiCreole.creole_tag()
+  #
+  # The tags that may be of interest are:
+  #
+  #  br          dd          dl
+  #  dt          em          h1
+  #  h2          h3          h4
+  #  h5          h6          hr 
+  #  ilink       img         inowiki
+  #  ip          li          link
+  #  mono        nowiki      ol
+  #  p           strong      sub
+  #  sup         table       td
+  #  th          tr          u
+  #  ul
+  #
+  # Those should be self-explanatory, except for inowiki (inline nowiki),
+  # ilink (bare links, e.g.
+  #  http://www.cpan.org
+  # and ip (indented paragraph).
+  def self.creole_tag(*args)
+    
+    # I bet a good Ruby hacker would know a way around this little chunk...
+    tag = args.length > 0 ? args[0] : nil
+    type = args.length > 1 ? args[1] : nil
+    text = args.length > 2 ? args[2] : nil
+    
+    if tag.nil?
+      tags = ""
+      for key in @@chunks_hash.keys.collect{|x| x.to_s}.sort
+        key = key.to_sym
+        o = @@chunks_hash[key][:open]
+        c = @@chunks_hash[key][:close]
+        next if o.nil? || !o.index(/</m)
+        o = o.gsub(/\n/m,"\\n")
+        c = c.gsub(/\n/m,"\\n") if c
+        c = "" if c.nil?
+        this_tag = "#{key}: open(#{o}) close(#{c})\n"
+        tags += this_tag
+      end
+      return tags
+    else
+      return if ! type
+      type = type.to_sym
+      return if type != :open && type != :close
+      return if !@@chunks_hash.has_key?(tag)
+      @@chunks_hash[tag][type] = text ? text : ""
+    end
+  end
+  
+  private
   
   # characters that may indicate inline wiki markup
   @@specialchars = ['^', '\\', '*', '/', '_', ',', '{', '[', 
@@ -589,6 +843,18 @@ class WikiCreole
     },
   }
   
+  def self.strip_leading_and_trailing_eq_and_whitespace(s)
+    s.sub!(/^\s*=*\s*/, '')
+    s.sub!(/\s*=*\s*$/, '')
+    return s
+  end
+
+  def self.strip_list(s)
+    s.sub!(/(?:`*| *)[\*\#]/, '`')
+    s.gsub!(/\n(?:`*| *)[\*\#]/m, "\n`")
+    return s
+  end
+  
   def self.filter_string_x_with_chunk_filter_y(str, chunk)
     return @@chunks_hash[chunk][:filter].call(str)
   end
@@ -667,7 +933,7 @@ class WikiCreole
 
     first_char = tref[pos, 1] # get a hint about the next chunk
     for chunk_hinted_at in @@chunks_hash[chunk][:calculated_hint_array_for][first_char].to_a
-      #puts "trying hint #{chunk_hinted_at} for -#{first_char}- on -" + tref[pos, 2] + "-\n";
+      #puts "trying hint #{chunk_hinted_at} for -#{first_char}- on -" + tref[pos, 2] + "-\n"
       if tref.index(@@chunks_hash[chunk_hinted_at][:curpatcmp], pos) # hint helped id the chunk
         return chunk_hinted_at
       end
@@ -752,104 +1018,6 @@ class WikiCreole
     
   end
   
-  # Creole 1.0 supports two plugin syntaxes: << plugin content >> and
-  #                                         <<< plugin content >>>
-  # 
-  # Write a function that receives the text between the <<>> 
-  # delimiters (not including the delimiters) and 
-  # returns the text to be displayed.  For example, here is a 
-  # simple plugin that converts plugin text to uppercase:
-  #
-  # uppercase = Proc.new {|s| 
-  #   s.upcase!
-  #   s
-  # }
-  # Creole.creole_plugin(uppercase)
-  #
-  # If you do not register a plugin function, plugin markup will be left
-  # as is, including the surrounding << >>.
-  def self.creole_plugin(func)
-    @plugin_function = func
-  end
-
-  def self.creole_link(func)
-    @link_function = func
-  end
   
-  def self.creole_barelink(func)
-    @barelink_function = func
-  end
-
-  def self.creole_img(func)
-    @img_function = func
-  end
-  
-  def self.creole_customlinks
-    @@chunks_hash[:href][:open] = ""
-    @@chunks_hash[:href][:close] = ""
-    @@chunks_hash[:link][:open] = ""
-    @@chunks_hash[:link][:close] = ""
-    @@chunks_hash[:link].delete(:contains)
-    @@chunks_hash[:link][:filter] = Proc.new {|s| 
-      if @link_function
-        s = @link_function.call(s)
-      end
-      s
-    }
-  end
-
-  def self.creole_custombarelinks
-    @@chunks_hash[:ilink][:open] = ""
-    @@chunks_hash[:ilink][:close] = ""
-    @@chunks_hash[:ilink][:filter] = Proc.new {|s| 
-      if @barelink_function
-        s = @barelink_function.call(s)
-      end
-      s
-    }
-  end
-
-  def self.creole_customimgs
-    @@chunks_hash[:img][:open] = ""
-    @@chunks_hash[:img][:close] = ""
-    @@chunks_hash[:img].delete(:contains)
-    @@chunks_hash[:img][:filter] = Proc.new {|s| 
-      if @img_function
-        s = @img_function.call(s)
-      end
-      s
-    }
-  end
-  
-  def self.creole_tag(*args)
-    
-    # I bet a good Ruby hacker would know a way around this little chunk...
-    tag = args.length > 0 ? args[0] : nil
-    type = args.length > 1 ? args[1] : nil
-    text = args.length > 2 ? args[2] : nil
-    
-    if tag.nil? || tag == "suppress_puts"
-      tags = ""
-      for key in @@chunks_hash.keys.collect{|x| x.to_s}.sort
-        key = key.to_sym
-        o = @@chunks_hash[key][:open]
-        c = @@chunks_hash[key][:close]
-        next if o.nil? || !o.index(/</m)
-        o = o.gsub(/\n/m,"\\n")
-        c = c.gsub(/\n/m,"\\n") if c
-        c = "" if c.nil?
-        this_tag = "#{key}: open(#{o}) close(#{c})\n"
-        puts this_tag if tag.to_s != "suppress_puts" 
-        tags += this_tag
-      end
-      return tags
-    else
-      return if ! type
-      type = type.to_sym
-      return if type != :open && type != :close
-      return if !@@chunks_hash.has_key?(tag)
-      @@chunks_hash[tag][type] = text ? text : ""
-    end
-  end
 
 end

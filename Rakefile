@@ -10,7 +10,5 @@ Rake::TestTask.new(:test_all) do |t|
   t.test_files = FileList['test/test_all.rb']
 end
 
-desc "Create Gem"
-task :create_gem do
-  `gem build creole.gemspec`
-end
+#note, to build the gem, use:
+#gem build wiki_creole.gemspec

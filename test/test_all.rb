@@ -137,7 +137,7 @@ class TC_WikiCreole < Test::Unit::TestCase
   end
   
   def test_puts_existing_creole_tags
-    tags = WikiCreole.creole_tag("suppress_puts")
+    tags = WikiCreole.creole_tag()
     assert tags.index(/u: open\(<u>\) close\(<\/u>\)/)
   end
   
