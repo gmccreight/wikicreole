@@ -1,12 +1,15 @@
-# Read the code and get the variables
+# You can create a new release using this file by calling:
+# gem build wiki_creole_gemspec.rb
+
+# Read the actual code to get the version and the date
 code = File.read("lib/wiki_creole.rb")
 version_from_code = code.match(/Version:: *(\d+\.\d+\.\d+)/m)[1]
 date_from_code = code.match(/Date:: *(\d+-\d+-\d+)/m)[1]
 
-# Read the first line of the Changelog to make sure it matches with the code's variables.  This ensures
+# Read the first line of the Changelog to make sure it matches with the code's version and date.  This ensures
 # that everything is in sync for the release.
 changelog = File.read("Changelog")
-matches = changelog.match(/^(\d+-\d+-\d+) *\((\d+\.\d+\.\d+)\)/)
+matches = changelog.match(/^ *(\d+-\d+-\d+) *\((\d+\.\d+\.\d+)\)/)
 date_from_changelog = matches[1]
 version_from_changelog = matches[2]
 
@@ -39,7 +42,7 @@ end
 
 # If there were any errors, don't actually do the build.
 if had_errors
-  puts "BUILD ABORTED because of errors"
+  puts "BUILD ABORTED because of the errors listed above"
   exit
 end
 

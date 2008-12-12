@@ -9,6 +9,3 @@ Rake::TestTask.new(:test_all) do |t|
   t.warning = true
   t.test_files = FileList['test/test_all.rb']
 end
-
-#note, to build the gem, use:
-#gem build wiki_creole.gemspec
