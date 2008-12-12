@@ -5,6 +5,7 @@
     ri WikiCreole
 
 == Synopsis
+  require 'rubygems'
   require 'wiki_creole'
   xhtml = WikiCreole.creole_parse(creole_markup_string)
 

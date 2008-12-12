@@ -5,11 +5,12 @@
 # Author::    Gordon McCreight  (mailto:wikicreole.to.gordon@mccreight.com)
 # Copyright:: Copyright (c) 2008 Gordon McCreight
 # License::   Distributes under the same terms as Ruby (see the LICENSE file)
-# Version:: 0.1.1
+# Version:: 0.1.2
 # Date:: 2008-12-12
 #
 # == Synopsis
 # Most likely you'll just want to do:
+#  require 'rubygems'
 #  require 'wiki_creole'
 #  xhtml = WikiCreole.creole_parse(wiki_creole_markup)
 # If you want to override the default behaviors, make sure to look at the other
