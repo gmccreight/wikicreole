@@ -5,6 +5,8 @@
 # Author::    Gordon McCreight  (mailto:wikicreole.to.gordon@mccreight.com)
 # Copyright:: Copyright (c) 2008 Gordon McCreight
 # License::   Distributes under the same terms as Ruby (see the LICENCE file)
+# Version:: 0.1.1
+# Date:: 2008-12-12
 #
 # == Synopsis
 # Most likely you'll just want to do:
