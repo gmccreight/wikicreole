@@ -46,6 +46,20 @@ if had_errors
   exit
 end
 
+files = %W{
+  README
+  Changelog
+  COPYING
+  LICENSE
+  Rakefile
+  lib/wiki_creole.rb
+  test/test_all.rb        test/test_escape.html    test/test_jsp_wiki.markup
+  test/test_amp.html      test/test_escape.markup  test/test_specialchars.html
+  test/test_amp.markup    test/test_inline.html    test/test_specialchars.markup
+  test/test_block.html    test/test_inline.markup
+  test/test_block.markup  test/test_jsp_wiki.html
+}
+
 Gem::Specification.new do |s|
    s.name = %q{WikiCreole}
    s.version = version_from_code
@@ -53,8 +67,10 @@ Gem::Specification.new do |s|
    s.authors = ["Gordon McCreight"]
    s.email = %q{gordon@mccreight.com}
    s.has_rdoc = true
+   s.require_path = "lib"
    s.summary = %q{A Creole-to-XHTML converter written in pure Ruby}
    s.homepage = %q{http://github.com/gmccreight/wikicreole/tree/master}
    s.description = %q{A Creole-to-XHTML converter written in pure Ruby}
-   s.files = [ "README", "Changelog", "COPYING", "LICENSE", "lib/wiki_creole.rb"]
+   s.files = files
+   s.test_files = "test/test_all.rb".to_a
 end
