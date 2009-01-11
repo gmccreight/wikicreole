@@ -256,7 +256,7 @@ class WikiCreole
       this_tag = "#{key}: open(#{o}) close(#{c})\n"
       tags << this_tag
     end
-    tags.join('')
+    tags.join
   end
 
 private
@@ -344,7 +344,7 @@ private
     :dd => {
       :curpat => '(?=\n|:)',
       :fwpat => '(?:\n|:)',
-      :stops => '(?=:)|\n(?=;)',
+      :stops => '.(?=:)|\n(?=;)',
       :hint => [':', "\n"],
       :contains => ALL_INLINE,
       :filter => Proc.new {|s|
@@ -839,36 +839,21 @@ private
     sub_chunk = nil
     pos = 0
     last_pos = 0
-    html = ""
+    html = []
 
     loop do
 
       if sub_chunk # we've determined what type of sub_chunk this is
 
-        if sub_chunk == :dd
-          # Yuck... I don't exactly understand why I need this section, but
-          # without it the parser will go into an infinite loop on the :dd's in
-          # the test suite.  Please, if you're a most excellent Ruby hacker,
-          # find the issue, clean this up, and remove the comment here, m'kay?
-
-          while tref.index(Regexp.compile('\G.*' + @@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
-            end_of_match = Regexp.last_match.end(0)
-            break if end_of_match == pos
-            pos = end_of_match
-          end
-
-          pos = tref.length if pos == last_pos
+        # This is a little slower than it could be.  The delim should be
+        # pre-compiled, but see the issue in the comment above.
+        if tref.index(@@chunks_hash[sub_chunk][:delim], pos)
+          pos = Regexp.last_match.end(0)
         else
-          # This is a little slower than it could be.  The delim should be
-          # pre-compiled, but see the issue in the comment above.
-          if tref.index(Regexp.compile(@@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
-            pos = Regexp.last_match.end(0)
-          else
-            pos = tref.length
-          end
+          pos = tref.length
         end
 
-        html += @@chunks_hash[sub_chunk][:open]
+        html << @@chunks_hash[sub_chunk][:open]
 
         t = tref[last_pos, pos - last_pos] # grab the chunk
 
@@ -879,12 +864,12 @@ private
         last_pos = pos  # remember where this chunk ends (where next begins)
 
         if t && @@chunks_hash[sub_chunk].has_key?(:contains)  # if it contains other chunks...
-          html += parse(t, sub_chunk)         #    recurse.
+          html << parse(t, sub_chunk)         #    recurse.
         else
-          html += t                    # otherwise, print it
+          html << t                    # otherwise, print it
         end
 
-        html += @@chunks_hash[sub_chunk][:close]       # print the close tag
+        html << @@chunks_hash[sub_chunk][:close]       # print the close tag
 
       end
 
@@ -893,7 +878,7 @@ private
 
     end
 
-    html
+    html.join
   end
 
   def self.get_sub_chunk_for(tref, chunk, pos)
@@ -951,7 +936,9 @@ private
         c[:curpatcmp] = Regexp.compile('\G' + c[:curpat], Regexp::MULTILINE)
       end
 
-      c[:delim] = delim(k) if c.has_key?(:stops)
+      if c.has_key?(:stops)
+        c[:delim] = Regexp.compile(delim(k), Regexp::MULTILINE)
+      end
 
       if c.has_key?(:contains) # store hints about each chunk to speed id
         c[:calculated_hint_array_for] = {}
