@@ -119,11 +119,7 @@ class TC_WikiCreole < Test::Unit::TestCase
   
   def test_user_supplied_creole_link_function
     
-    uppercase = Proc.new {|s| 
-      s.upcase!
-      s
-    }
-    WikiCreole.creole_link(uppercase)
+    WikiCreole.creole_link {|s| s.upcase }
     
     markup = "This is a paragraph with an uppercased [[ link ]].\nCheck it out."
     goodhtml = %Q{<p>This is a paragraph with an uppercased <a href="LINK">link</a>.\nCheck it out.</p>\n\n}
@@ -132,12 +128,12 @@ class TC_WikiCreole < Test::Unit::TestCase
     
     # set the link function back to being nil so that the rest of the tests
     # are not affected by the custom link function
-    WikiCreole.creole_link(nil)
+    WikiCreole.creole_link
 
   end
   
   def test_puts_existing_creole_tags
-    tags = WikiCreole.creole_tag()
+    tags = WikiCreole.creole_tags
     assert tags.index(/u: open\(<u>\) close\(<\/u>\)/)
   end
   
@@ -152,11 +148,7 @@ class TC_WikiCreole < Test::Unit::TestCase
   end
   
   def test_user_supplied_plugin_function
-    uppercase = Proc.new {|s| 
-      s.upcase!
-      s
-    }
-    WikiCreole.creole_plugin(uppercase)
+    WikiCreole.creole_plugin {|s| s.upcase }
     
     markup = "This is a paragraph with an uppercasing << plugin >>.\nCheck it out."
     goodhtml = %Q{<p>This is a paragraph with an uppercasing  PLUGIN .\nCheck it out.</p>\n\n}
@@ -165,7 +157,7 @@ class TC_WikiCreole < Test::Unit::TestCase
     
     # set the link function back to being nil so that the rest of the tests
     # are not affected by the custom link function
-    WikiCreole.creole_plugin(nil)
+    WikiCreole.creole_plugin
   end
 
   #-----------------------------------------------------------------------------
