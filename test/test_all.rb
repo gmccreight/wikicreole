@@ -198,6 +198,10 @@ class TC_WikiCreole < Test::Unit::TestCase
     # are the same as they were in the original test.
     run_testfile("jsp_wiki")    
   end
+
+  def test_nested_lists
+    run_testfile("nested_lists")
+  end
   
   def run_testfile(name)
     name = "test_" + name

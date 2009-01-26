@@ -1,0 +1,4 @@
+* correctly start with first level
+** correctly continue with second level
+*** correctly enter third level
+* bug: jump back to first level
