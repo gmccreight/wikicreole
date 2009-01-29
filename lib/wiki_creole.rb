@@ -322,7 +322,7 @@ class WikiCreole
     },
     :blank => {
       :curpat => "(?= *#{@@eol})",
-      :fwpat => "(?=(?:^|\n) *#{@@eol})",
+      :fwpat => "(?=(?:^|\\n) *#{@@eol})",
       :stops => '(?=\S)',
       :hint => ["\n"],
       :filter => Proc.new { "" }, # whitespace into the bit bucket
@@ -468,7 +468,7 @@ class WikiCreole
     :nowiki => {
       :curpat => '(?=\{\{\{ *\n)',
       :fwpat => '\n(?=\{\{\{ *\n)',
-      :stops => "\n\\}\\}\\} *#{@@eol}",
+      :stops => "\\n\\}\\}\\} *#{@@eol}",
       :hint => ['{'],
       :filter => Proc.new {|s|
         s[0,3] = ''
@@ -482,7 +482,7 @@ class WikiCreole
     },
     :hr => {
       :curpat => "(?= *-{4,} *#{@@eol})",
-      :fwpat => "\n(?= *-{4,} *#{@@eol})",
+      :fwpat => "\\n(?= *-{4,} *#{@@eol})",
       :hint => ['-', ' '],
       :stops => @@eol,
       :open => "<hr />\n\n", :close => "",
@@ -862,6 +862,44 @@ class WikiCreole
     return @@chunks_hash[chunk][:filter].call(str)
   end
   
+  def self.get_next_pos_for_chunk_type(tref, chunk, starting_pos, last_pos)
+  
+    pos = starting_pos
+    
+    if chunk == :dd
+      # Yuck... I don't exactly understand why I need this section, but
+      # without it the parser will go into an infinite loop on the :dd's in
+      # the test suite.  Please, if you're a most excellent Ruby hacker,
+      # find the issue, clean this up, and remove the comment here, m'kay?
+      
+      while tref.index(Regexp.compile('\G.*' + @@chunks_hash[chunk][:delim], Regexp::MULTILINE), pos)
+        end_of_match = Regexp.last_match.end(0)
+        if end_of_match == pos
+          break
+        else
+          pos = end_of_match
+        end
+      end
+
+      if pos == last_pos
+        pos = tref.length
+      end
+    else
+      # This is a little slower than it could be.  The delim should be
+      # pre-compiled, but see the issue in the comment above.
+      
+      #puts chunk
+      #puts @@chunks_hash[chunk][:delim]
+      
+      if tref.index(Regexp.compile(@@chunks_hash[chunk][:delim], Regexp::MULTILINE), pos)
+        pos = Regexp.last_match.end(0)
+      else 
+        pos = tref.length
+      end
+    end
+    return pos
+  end
+  
   def self.parse(tref, chunk)
   
     sub_chunk = nil
@@ -874,33 +912,7 @@ class WikiCreole
 
       if sub_chunk # we've determined what type of sub_chunk this is
         
-        if sub_chunk == :dd
-          # Yuck... I don't exactly understand why I need this section, but
-          # without it the parser will go into an infinite loop on the :dd's in
-          # the test suite.  Please, if you're a most excellent Ruby hacker,
-          # find the issue, clean this up, and remove the comment here, m'kay?
-          
-          while tref.index(Regexp.compile('\G.*' + @@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
-            end_of_match = Regexp.last_match.end(0)
-            if end_of_match == pos
-              break
-            else
-              pos = end_of_match
-            end
-          end
-
-          if pos == last_pos
-            pos = tref.length
-          end
-        else
-          # This is a little slower than it could be.  The delim should be
-          # pre-compiled, but see the issue in the comment above.
-          if tref.index(Regexp.compile(@@chunks_hash[sub_chunk][:delim], Regexp::MULTILINE), pos)
-            pos = Regexp.last_match.end(0)
-          else 
-            pos = tref.length
-          end
-        end
+        pos = self.get_next_pos_for_chunk_type(tref, sub_chunk, pos, last_pos)
 
         html += @@chunks_hash[sub_chunk][:open]
 
@@ -919,10 +931,12 @@ class WikiCreole
         end
         
         html += @@chunks_hash[sub_chunk][:close]       # print the close tag
-        
+      
       else
         if !first_try
           $stderr.puts "ERROR: endless loop detected"
+          #$stderr.puts "ERROR: tref is ->" + tref.to_s
+          #$stderr.puts "ERROR: chunk is ->" + chunk.to_s
           break
         end
         first_try = false
@@ -933,7 +947,7 @@ class WikiCreole
       else ## more string to come
         sub_chunk = get_sub_chunk_for(tref, chunk, pos)
       end
-      
+
     end
     
     return html
@@ -1025,9 +1039,5 @@ class WikiCreole
         end
       end
     end
-    
   end
-  
-  
-
 end
