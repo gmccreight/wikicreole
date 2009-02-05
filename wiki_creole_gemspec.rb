@@ -53,16 +53,20 @@ files = %W{
   LICENSE
   Rakefile
   lib/wiki_creole.rb
-  test/test_all.rb        test/test_escape.html    test/test_jsp_wiki.markup
-  test/test_amp.html      test/test_escape.markup  test/test_specialchars.html
-  test/test_amp.markup    test/test_inline.html    test/test_specialchars.markup
-  test/test_block.html    test/test_inline.markup
-  test/test_block.markup  test/test_jsp_wiki.html
   test/profiling.rb
+  test/test_all.rb
+  test/test_amp.markup          test/test_amp.html
+  test/test_block.markup        test/test_block.html 
+  test/test_escape.markup       test/test_escape.html
+  test/test_inline.markup       test/test_inline.html
+  test/test_jsp_wiki.markup     test/test_jsp_wiki.html
+  test/test_nested_lists.markup test/test_nested_lists.html
+  test/test_specialchars.markup test/test_specialchars.html
 }
 
 Gem::Specification.new do |s|
    s.name = %q{WikiCreole}
+   s.rubyforge_project = 'wikicreole'
    s.version = version_from_code
    s.date = date_from_code
    s.authors = ["Gordon McCreight"]
