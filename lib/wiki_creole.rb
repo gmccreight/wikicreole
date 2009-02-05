@@ -5,8 +5,8 @@
 # Author::    Gordon McCreight  (mailto:wikicreole.to.gordon@mccreight.com)
 # Copyright:: Copyright (c) 2008 Gordon McCreight
 # License::   Distributes under the same terms as Ruby (see the LICENSE file)
-# Version:: 0.1.2
-# Date:: 2008-12-12
+# Version:: 0.1.3
+# Date:: 2009-02-05
 #
 # == Synopsis
 # Most likely you'll just want to do:
@@ -242,7 +242,7 @@ class WikiCreole
   end
 
   # See all current tags:
-  #  puts WikiCreole.creole_tag()
+  #  puts WikiCreole.creole_tags()
   #
   def self.creole_tags
     tags = []

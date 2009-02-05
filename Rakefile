@@ -15,3 +15,9 @@ Rake::TestTask.new(:test_all) do |t|
   t.warning = true
   t.test_files = FileList['test/test_all.rb']
 end
+
+Rake::TestTask.new(:profiling) do |t|
+  t.libs << 'lib'
+  t.warning = true
+  t.test_files = FileList['test/profiling.rb']
+end

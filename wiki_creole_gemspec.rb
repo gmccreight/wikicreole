@@ -58,6 +58,7 @@ files = %W{
   test/test_amp.markup    test/test_inline.html    test/test_specialchars.markup
   test/test_block.html    test/test_inline.markup
   test/test_block.markup  test/test_jsp_wiki.html
+  test/profiling.rb
 }
 
 Gem::Specification.new do |s|

@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'rubygems'
 require 'wiki_creole'
 require 'ruby-prof'
 
