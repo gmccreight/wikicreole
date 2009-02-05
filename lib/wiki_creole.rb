@@ -840,6 +840,7 @@ private
     pos = 0
     last_pos = 0
     html = []
+    first_try = true
 
     loop do
 
@@ -870,7 +871,13 @@ private
         end
 
         html << @@chunks_hash[sub_chunk][:close]       # print the close tag
-
+        
+      else
+       if !first_try
+         $stderr.puts "ERROR: endless loop detected"
+         break
+       end
+       first_try = false
       end
 
       break if pos && pos == tref.length # we've eaten the whole string
