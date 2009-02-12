@@ -872,12 +872,20 @@ private
 
         html << @@chunks_hash[sub_chunk][:close]       # print the close tag
         
-      else
-       if !first_try
-         $stderr.puts "ERROR: endless loop detected"
-         break
-       end
-       first_try = false
+      else         
+        if !first_try
+          # The nested list test will cause a dangling newline.  I tried fiddling
+          # with the grammer for a while, then decided this was just an easier
+          # fix for the time being.  If anyone wants to find the issue in the
+          # grammer and fix it, we can remove this hack.
+          if pos == tref.length - 1 && tref[pos..tref.length] == "\n"
+            break
+          else
+            $stderr.puts "ERROR: endless loop detected"
+            break
+          end
+        end
+        first_try = false
       end
 
       break if pos && pos == tref.length # we've eaten the whole string
