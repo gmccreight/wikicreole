@@ -401,8 +401,8 @@ private
       :open => "        <th>", :close => "</th>\n",
     },
     :ul => {
-      :curpat => '(?=(?:`| *)\*[^\*])',
-      :fwpat => '(?=\n(?:`| *)\*[^\*])',
+      :curpat => '(?=(?:`| *)\*[^*])',
+      :fwpat => '(?=\n(?:`| *)\*[^*])',
       :stops => ['blank', 'ip', 'h', 'nowiki', 'li', 'table', 'hr', 'dl'],
       :contains => ['ul', 'ol', 'li'],
       :hint => ['*', ' '],
@@ -413,8 +413,8 @@ private
       :open => "<ul>\n", :close => "</ul>\n",
     },
     :ol => {
-      :curpat => '(?=(?:`| *)\#[^\#])',
-      :fwpat => '(?=\n(?:`| *)\#[^\#])',
+      :curpat => '(?=(?:`| *)\#[^#])',
+      :fwpat => '(?=\n(?:`| *)\#[^#])',
       :stops => ['blank', 'ip', 'h', 'nowiki', 'li', 'table', 'hr', 'dl'],
       :contains => ['ul', 'ol', 'li'],
       :hint => ['#', ' '],
@@ -425,8 +425,8 @@ private
       :open => "<ol>\n", :close => "</ol>\n",
     },
     :li => {
-      :curpat => '(?=`[^\*\#])',
-      :fwpat => '\n(?=`[^\*\#])',
+      :curpat => '(?=`[^*#])',
+      :fwpat => '\n(?=`[^*#])',
       :stops => '\n(?=`)',
       :hint => ['`'],
       :filter => Proc.new {|s|
@@ -528,7 +528,7 @@ private
       },
     },
     :plain => {
-      :curpat => '(?=[^\*\/_\,\^\\\\{\[\<\|])',
+      :curpat => '(?=[^*/_,^\\{\[<|])',
       :stops => INLINE,
       :hint => PLAINCHARS,
       :open => '', :close => ''
@@ -825,8 +825,8 @@ private
   end
 
   def self.strip_list(s)
-    s.sub!(/(?:`*| *)[\*\#]/, '`')
-    s.gsub!(/\n(?:`*| *)[\*\#]/m, "\n`")
+    s.sub!(/(?:`*| *)[*#]/, '`')
+    s.gsub!(/\n(?:`*| *)[*#]/m, "\n`")
     s
   end
 
