@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
-# You can create a new release using this file by calling:
-# gem build wiki_creole_gemspec.rb
+# We use github to build this gem
+# See http://gems.github.com/
 
 files = %W{
   README
@@ -27,12 +27,12 @@ test_files = %W{
 
 Gem::Specification.new do |s|
   s.name = %q{WikiCreole}
-  s.version = %q{0.1.3}
+  s.version = %q{0.1.4}
   
-  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version
+  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   
   s.authors = ["Gordon McCreight"]
-  s.date = %q{2009-02-05}
+  s.date = %q{2009-08-11}
   s.description = %q{A Creole-to-XHTML converter written in pure Ruby}
   s.email = %q{gordon@mccreight.com}
   s.extra_rdoc_files = %W{README LICENSE}

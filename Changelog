@@ -1,3 +1,17 @@
+2009-08-11 (0.1.4)
+  * Artiom Diomin (kron4eg on github) made some changes to a
+    fork of WikiCreole which looked interesting.  They primarily
+    were related to cleaning up the gemspec file and allowing Github
+    to automatically build the gem.  I took his changes mostly
+    verbatim.
+  * I also added a test for "release_attributes".  This is a test
+    which only authors will really be interested in.  It ensures
+    that the release is numbered/dated correctly.  This check used
+    to be in the gemspec file, but I decided, based on Artiom's
+    changes, that it made more sense as a test.  Reading more about
+    the "jeweler" gem for releasing on github makes me think that
+    perhaps I'm going about things the wrong way, though.
+
 2009-02-05 (0.1.3)
   * nono on github made the Ruby more idiomatic and fixed a section
     which had eluded Gordon earlier.  He also added profiling, which

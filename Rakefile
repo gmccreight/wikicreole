@@ -13,7 +13,7 @@ task :check => :test_all
 Rake::TestTask.new(:test_all) do |t|
   t.libs << 'lib'
   t.warning = true
-  t.test_files = FileList['test/test_release_attributes.rb', 'test/test_all.rb']
+  t.test_files = FileList['test/test_all.rb', 'test/test_release_attributes.rb']
 end
 
 # When running the profiling task in Cygwin, this command line

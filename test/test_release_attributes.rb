@@ -18,7 +18,7 @@ class TC_WikiCreole < Test::Unit::TestCase
     @version_from_changelog = matches[2]
     
     # Read the gemspec file to get the version and the date
-    gemspec = File.read("wiki_creole_gemspec.rb")
+    gemspec = File.read("wikicreole.gemspec")
     @version_from_gemspec = gemspec.match(/s\.version.*?(\d+\.\d+\.\d+)/)[1]
     @date_from_gemspec = gemspec.match(/s\.date.*?(\d+-\d+-\d+)/)[1]
 
