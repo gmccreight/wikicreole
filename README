@@ -4,6 +4,9 @@
   the following command:
     ri WikiCreole
 
+== Install
+  sudo gem install gmccreight-WikiCreole --source http://gems.github.com
+
 == Synopsis
   require 'rubygems'
   require 'wiki_creole'
